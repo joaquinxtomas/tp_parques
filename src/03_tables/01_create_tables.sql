@@ -9,7 +9,7 @@ BEGIN
 	CREATE TABLE parques.TipoParque(
 		id_tipo_parque INT IDENTITY(1,1) NOT NULL,
 		descripcion VARCHAR(200) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_tipo_parque_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_tipo_parque_estado DEFAULT(0),
 
 		CONSTRAINT PK_TipoParque PRIMARY KEY (id_tipo_parque),
 		CONSTRAINT UQ_TipoParque_Descripcion UNIQUE(descripcion)
@@ -29,7 +29,7 @@ BEGIN
 		latitud DECIMAL(9,6) NULL,
 		longitud DECIMAL(9,6) NULL,
 		superficie DECIMAL(12,2) NULL,
-		estado BIT NOT NULL CONSTRAINT DF_parque_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_parque_estado DEFAULT(0),
 
 		CONSTRAINT PK_Parque PRIMARY KEY (id_parque),
 		CONSTRAINT UQ_Parque_Nombre UNIQUE(nombre),
@@ -60,7 +60,7 @@ BEGIN
 		titulo VARCHAR(100) NULL,
 		vigencia_desde DATE NOT NULL,
 		vigencia_hasta DATE NULL,
-		estado BIT NOT NULL CONSTRAINT DF_guia_autorizado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_guia_autorizado DEFAULT(0),
 
 		CONSTRAINT PK_GuiaAutorizado PRIMARY KEY (id_guia),
 		CONSTRAINT UQ_GuiaAutorizado_DNI UNIQUE (dni),
@@ -85,7 +85,7 @@ BEGIN
 		vigencia_desde DATE NOT NULL,
 		vigencia_hasta DATE NULL,
 		activo BIT NOT NULL CONSTRAINT DF_Guardaparque_Activo DEFAULT(0),
-		estado BIT NOT NULL CONSTRAINT DF_guardparque_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_guardparque_estado DEFAULT(0),
 
 		CONSTRAINT PK_Guardaparque PRIMARY KEY (id_guardaparque),
 		CONSTRAINT UQ_Guardaparque_DNI UNIQUE(dni),
@@ -111,7 +111,7 @@ BEGIN
 		fecha_desde DATE NOT NULL,
 		fecha_hasta DATE NULL,
 		motivo VARCHAR(255) NULL,
-		estado BIT NOT NULL CONSTRAINT DF_asignacion_gp DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_asignacion_gp DEFAULT(0),
 
 		CONSTRAINT PK_AsignacionGP PRIMARY KEY (id_asignacion),
 		CONSTRAINT FK_AsignacionGP_Guardaparque FOREIGN KEY (id_guardaparque)
@@ -145,7 +145,7 @@ BEGIN
 		duracion INT NULL,
 		cupo_maximo INT NULL,
 		tipo VARCHAR(20) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_atraccion_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_atraccion_estado DEFAULT(0),
 
 		CONSTRAINT PK_Atraccion PRIMARY KEY(id_atraccion),
 		CONSTRAINT FK_Atraccion_Parque FOREIGN KEY (id_parque)
@@ -171,7 +171,7 @@ BEGIN
 		id_tour_guia INT IDENTITY(1,1) NOT NULL,
 		id_atraccion INT NOT NULL,
 		id_guia INT NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_tourguia_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_tourguia_estado DEFAULT(0),
 
 		CONSTRAINT PK_TourGuia PRIMARY KEY(id_tour_guia),
 		CONSTRAINT FK_TourGuia_Atraccion FOREIGN KEY(id_atraccion)
@@ -192,7 +192,7 @@ BEGIN
 	CREATE TABLE ventas.TipoVisitante(
 		id_tipo_visitante INT IDENTITY(1,1) NOT NULL,
 		descripcion VARCHAR(50) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_tipo_visitante_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_tipo_visitante_estado DEFAULT(0),
 
 		CONSTRAINT PK_TipoVisitante PRIMARY KEY (id_tipo_visitante),
 		CONSTRAINT UQ_TipoVisitante_Descripcion UNIQUE (descripcion)
@@ -211,7 +211,7 @@ BEGIN
 		precio DECIMAL (10,2) NOT NULL,
 		fecha_inicio DATE NOT NULL,
 		fecha_fin DATE NULL,
-		estado BIT NOT NULL CONSTRAINT DF_precio_entrada_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_precio_entrada_estado DEFAULT(0),
 
 		CONSTRAINT PK_PrecioEntrada PRIMARY KEY (id_precio),
 		CONSTRAINT FK_PrecioEntrada_Parque FOREIGN KEY (id_parque)
@@ -239,7 +239,7 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_ticket_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_ticket_estado DEFAULT(0),
 
 		CONSTRAINT PK_Ticket PRIMARY KEY (id_ticket),
 		CONSTRAINT FK_Ticket_Parque FOREIGN KEY (id_parque)
@@ -266,7 +266,7 @@ BEGIN
 		cantidad INT NOT NULL,
 		precio_unit DECIMAL(10,2) NOT NULL,
 		subtotal DECIMAL(12,2) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_detalle_ticket_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_detalle_ticket_estado DEFAULT(0),
 
 
 		CONSTRAINT PK_DetalleTicket PRIMARY KEY (id_detalle),
@@ -294,7 +294,7 @@ BEGIN
 		razon_social VARCHAR(150) NOT NULL,
 		cuit CHAR(11) NOT NULL, --SIN GUIONES
 		contacto VARCHAR(100) NULL,
-		estado BIT NOT NULL CONSTRAINT DF_empresa_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_empresa_estado DEFAULT(0),
 
 		CONSTRAINT PK_Empresa PRIMARY KEY (id_empresa),
 		CONSTRAINT UQ_Empresa_CUIT UNIQUE(cuit),
@@ -317,7 +317,7 @@ BEGIN
 		fecha_inicio DATE NOT NULL,
 		fecha_fin DATE NULL,
 		valor_alquiler DECIMAL(12,2) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_concesion_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_concesion_estado DEFAULT(0),
 
 
 		CONSTRAINT PK_Concesion PRIMARY KEY(id_concesion),
@@ -345,7 +345,7 @@ BEGIN
 		periodo DATE NOT NULL,
 		monto DECIMAL(12,2) NOT NULL,
 		fecha_pago DATE NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_pago_concesion_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_pago_concesion_estado DEFAULT(0),
 
 		CONSTRAINT PK_PagoConcesion PRIMARY KEY(id_pago),
 		CONSTRAINT FK_PagoConcesion_Concesion FOREIGN KEY (id_concesion)
