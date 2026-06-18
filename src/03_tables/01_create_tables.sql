@@ -219,9 +219,8 @@ BEGIN
 		CONSTRAINT FK_PrecioEntrada_TipoVisitante FOREIGN KEY(id_tipo_visitante)
 			REFERENCES ventas.TipoVisitante(id_tipo_visitante),
 		CONSTRAINT CK_PrecioEntrada_PrecioPositivo CHECK (precio >= 0),
-		CONSTRAINT CK_PrecioEntrada_FechasValidas CHECK(
-			fecha_fin IS NULL OR fecha_fin >= fecha_inicio
-		)
+		CONSTRAINT CK_PrecioEntrada_FechasValidas CHECK(fecha_fin IS NULL OR fecha_fin >= fecha_inicio),
+		CONSTRAINT UQ_PrecioEntrada_ParqueTipoFecha UNIQUE (id_parque, id_tipo_visitante, fecha_inicio)
 	);
 END
 GO
@@ -232,7 +231,7 @@ IF NOT EXISTS(
 BEGIN
 	CREATE TABLE ventas.Ticket(
 		id_ticket INT IDENTITY(1,1) NOT NULL,
-		id_tipo_visitante INT NOT NULL,
+		-- id_tipo_visitante INT NOT NULL, -- ya está en TicketVisitante para permitir tickets con múltiples tipos de visitantes
 		id_parque INT NOT NULL,
 		pto_venta INT NOT NULL,
 		fecha DATETIME2(0) NOT NULL,
@@ -244,8 +243,8 @@ BEGIN
 		CONSTRAINT PK_Ticket PRIMARY KEY (id_ticket),
 		CONSTRAINT FK_Ticket_Parque FOREIGN KEY (id_parque)
 			REFERENCES parques.Parque(id_parque),
-		CONSTRAINT FK_Ticket_TipoVisitante FOREIGN KEY (id_tipo_visitante)
-			REFERENCES ventas.TipoVisitante (id_tipo_visitante),
+		-- CONSTRAINT FK_Ticket_TipoVisitante FOREIGN KEY (id_tipo_visitante)
+		-- 	REFERENCES ventas.TipoVisitante (id_tipo_visitante),
 		CONSTRAINT UQ_TicketPtoVentaNroTicket UNIQUE(pto_venta, nro_ticket),
 		CONSTRAINT CK_Ticket_TotalPositivo CHECK (total >= 0),
 		CONSTRAINT CK_Ticket_FormaPago CHECK (
@@ -255,33 +254,59 @@ BEGIN
 END
 GO
 
-IF NOT EXISTS (
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas' 
-	AND TABLE_NAME = 'DetalleTicket')
+IF NOT EXISTS(
+	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas'
+	AND TABLE_NAME = 'TicketVisitante')
 BEGIN
-	CREATE TABLE ventas.DetalleTicket(
-		id_detalle INT IDENTITY (1,1) NOT NULL,
+	CREATE TABLE ventas.TicketVisitante(
+		id_ticket_visitantes INT IDENTITY(1,1) NOT NULL,
 		id_ticket INT NOT NULL,
-		id_atraccion INT NULL,
+		id_tipo_visitante INT NOT NULL,
 		cantidad INT NOT NULL,
 		precio_unit DECIMAL(10,2) NOT NULL,
-		subtotal DECIMAL(12,2) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_detalle_ticket_estado DEFAULT(0),
+		subtotal DECIMAL(12,2) NOT NULL
 
-
-		CONSTRAINT PK_DetalleTicket PRIMARY KEY (id_detalle),
-		CONSTRAINT FK_DetalleTicket_Ticket FOREIGN KEY (id_ticket)
+		CONSTRAINT PK_TicketVisitante PRIMARY KEY (id_ticket_visitantes),
+		CONSTRAINT FK_TicketVisitante_Ticket FOREIGN KEY (id_ticket)
 			REFERENCES ventas.Ticket(id_ticket),
-		CONSTRAINT FK_DetalleTicket_Atraccion FOREIGN KEY (id_atraccion)
-			REFERENCES actividades.Atraccion(id_atraccion),
-		CONSTRAINT CK_DetalleTicket_CantidadPositiva CHECK (cantidad > 0),
-		CONSTRAINT CK_DetalleTicket_PrecioPositivo CHECK (precio_unit >= 0),
-		CONSTRAINT CK_DetalleTicket_Subtotal CHECK (
-			subtotal = cantidad * precio_unit
-		)
-	);
+		CONSTRAINT FK_TicketVisitante_TipoVisitante FOREIGN KEY (id_tipo_visitante)
+			REFERENCES ventas.TipoVisitante(id_tipo_visitante),
+		CONSTRAINT CK_TicketVisitante_CantidadPositiva CHECK (cantidad > 0),
+		CONSTRAINT CK_TicketVisitante_PrecioPositivo CHECK (precio_unit >= 0),
+		CONSTRAINT UQ_TicketVisitante_TicketTipoVisitante UNIQUE(id_ticket, id_tipo_visitante),
+		CONSTRAINT CK_TicketVisitante_Subtotal CHECK (subtotal = cantidad * precio_unit)
+	)
 END
 GO
+
+
+-- Ya no sería necesaria porque TicketVisitante permite múltiples tipos de visitantes por ticket y las actividades se hace otro ticket a parte, pero se deja para mantener el historial de la primera entrega
+-- IF NOT EXISTS (
+-- 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas' 
+-- 	AND TABLE_NAME = 'DetalleTicket')
+-- BEGIN
+-- 	CREATE TABLE ventas.DetalleTicket(
+-- 		id_detalle INT IDENTITY (1,1) NOT NULL,
+-- 		id_ticket INT NOT NULL,
+-- 		id_atraccion INT NULL,
+-- 		cantidad INT NOT NULL,
+-- 		precio_unit DECIMAL(10,2) NOT NULL,
+-- 		subtotal DECIMAL(12,2) NOT NULL,
+-- 		estado BIT NOT NULL CONSTRAINT DF_detalle_ticket_estado DEFAULT(0),
+--
+--		CONSTRAINT PK_DetalleTicket PRIMARY KEY (id_detalle),
+--		CONSTRAINT FK_DetalleTicket_Ticket FOREIGN KEY (id_ticket)
+--			REFERENCES ventas.Ticket(id_ticket),
+--		CONSTRAINT FK_DetalleTicket_Atraccion FOREIGN KEY (id_atraccion)
+--			REFERENCES actividades.Atraccion(id_atraccion),
+--		CONSTRAINT CK_DetalleTicket_CantidadPositiva CHECK (cantidad > 0),
+--		CONSTRAINT CK_DetalleTicket_PrecioPositivo CHECK (precio_unit >= 0),
+--		CONSTRAINT CK_DetalleTicket_Subtotal CHECK (
+--			subtotal = cantidad * precio_unit
+--		)
+--	);
+--END
+--GO
 
 
 -- SCHEMA CONCESIONES
