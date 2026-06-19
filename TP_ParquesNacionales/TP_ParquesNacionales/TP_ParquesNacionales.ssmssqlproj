@@ -4,12 +4,12 @@
     <LogicalFolder Name="Connections" Type="2" Sorted="true">
       <Items>
         <ConnectionNode Name="JIMENMAU-W11\SQLEXPRESS:SADESA-GLOBAL\LocalAdmin">
-          <Created>2026-06-19T11:44:38.4243617-03:00</Created>
+          <Created>2026-06-19T14:47:33.9676361-03:00</Created>
           <Type>SQL</Type>
           <Server>JIMENMAU-W11\SQLEXPRESS</Server>
           <UserName />
           <Authentication>Windows Authentication</Authentication>
-          <InitialDB>ParquesNacionales</InitialDB>
+          <InitialDB />
           <LoginTimeout>30</LoginTimeout>
           <TrustServerCertificate>False</TrustServerCertificate>
           <HostNameInServerCertificate />
@@ -40,33 +40,27 @@
           <AssociatedConnUserName />
           <FullPath>01_create_tables.sql</FullPath>
         </FileNode>
-        <FileNode Name="Reset.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
-          <AssociatedConnUserName />
-          <FullPath>Reset.sql</FullPath>
-        </FileNode>
         <FileNode Name="sp_actividades.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
           <AssociatedConnUserName />
           <FullPath>sp_actividades.sql</FullPath>
         </FileNode>
         <FileNode Name="sp_concesiones.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
           <AssociatedConnUserName />
           <FullPath>sp_concesiones.sql</FullPath>
         </FileNode>
         <FileNode Name="sp_ventas.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
           <AssociatedConnUserName />
           <FullPath>sp_ventas.sql</FullPath>
         </FileNode>
         <FileNode Name="usp_parques.sql">
-          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
-          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnectionMoniker />
+          <AssociatedConnSrvName />
           <AssociatedConnUserName />
           <FullPath>usp_parques.sql</FullPath>
         </FileNode>
