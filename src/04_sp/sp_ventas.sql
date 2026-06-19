@@ -113,8 +113,7 @@ BEGIN
     IF @precio IS NULL OR @precio < 0
         SET @v_errores += 'El precio debe ser un valor positivo. ';
 
-    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada
-                WHERE id_parque = @id_parque AND id_tipo_visitante = @id_tipo_visitante)
+    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_parque = @id_parque AND id_tipo_visitante = @id_tipo_visitante AND estado = 0)
         SET @v_errores += 'Ya existe un precio para ese parque y tipo de visitante. ';
 
     IF @v_errores <> ''
@@ -147,7 +146,7 @@ BEGIN
     IF @precio IS NULL OR @precio < 0
         SET @v_errores += 'El precio debe ser un valor positivo. ';
 
-    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_parque = @id_parque AND id_tipo_visitante = @id_tipo_visitante)
+    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_parque = @id_parque AND id_tipo_visitante = @id_tipo_visitante AND estado = 0)
         SET @v_errores += 'Ya existe un precio para ese parque y tipo de visitante. ';
     
     IF @fecha_inicio IS NULL OR @fecha_fin IS NULL
@@ -173,8 +172,8 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_precio = @id_precio)
-        SET @v_errores += 'El precio de entrada no existe. ';
+    IF NOT EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_precio = @id_precio AND estado = 0)
+        SET @v_errores += 'El precio de entrada no existe o está dado de baja. ';
 
     IF @precio IS NULL OR @precio < 0
         SET @v_errores += 'El precio debe ser un valor positivo. ';

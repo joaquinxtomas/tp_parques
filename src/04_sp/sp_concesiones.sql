@@ -9,10 +9,10 @@ GO
 
 -- Empresa
 
-CREATE OR ALTER PROCEDURE consesiones.Empresa_Nueva
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Nueva
     @razon_social VARCHAR(255),
     @cuit VARCHAR(20),
-    @contrato VARCHAR(100)
+    @contacto VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -24,11 +24,11 @@ BEGIN
     IF @cuit IS NULL OR LTRIM(RTRIM(@cuit)) = ''
         SET @v_errores = @v_errores + 'El CUIT es obligatorio. ';
 
-    IF EXISTS (SELECT 1 FROM consesiones.Empresa WHERE cuit = @cuit)
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
         SET @v_errores = @v_errores + 'El CUIT ya existe. ';
 
-    IF @contrato IS NULL OR LTRIM(RTRIM(@contrato)) = ''
-        SET @v_errores = @v_errores + 'El contrato es obligatorio. ';
+    IF @contacto IS NULL OR LTRIM(RTRIM(@contacto)) = ''
+        SET @v_errores = @v_errores + 'El contacto es obligatorio. ';
 
     IF @v_errores <> ''
     BEGIN
@@ -36,28 +36,28 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO consesiones.Empresa (razon_social, cuit, contrato)
-    VALUES (@razon_social, @cuit, @contrato);
+    INSERT INTO concesiones.Empresa (razon_social, cuit, contacto)
+    VALUES (@razon_social, @cuit, @contacto);
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.Empresa_Modificar
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Modificar
     @id_empresa INT,
     @razon_social VARCHAR(255) = NULL,
     @cuit VARCHAR(20) = NULL,
-    @contrato VARCHAR(100) = NULL
+    @contacto VARCHAR(100) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Empresa WHERE id_empresa = @id_empresa)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
         SET @v_errores = @v_errores + 'La empresa no existe. ';
 
-    IF EXISTS (SELECT 1 FROM consesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
         SET @v_errores = @v_errores + 'La razón social ya existe. ';
 
-    IF EXISTS (SELECT 1 FROM consesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
         SET @v_errores = @v_errores + 'El CUIT ya existe. ';
 
     IF @v_errores <> ''
@@ -67,31 +67,34 @@ BEGIN
     END
 
     IF @razon_social IS NOT NULL        
-        UPDATE consesiones.Empresa
+        UPDATE concesiones.Empresa
         SET razon_social = @razon_social
         WHERE id_empresa = @id_empresa;
 
     IF @cuit IS NOT NULL
-        UPDATE consesiones.Empresa
+        UPDATE concesiones.Empresa
         SET cuit = @cuit
         WHERE id_empresa = @id_empresa;
 
-    IF @contrato IS NOT NULL
-        UPDATE consesiones.Empresa
-        SET contrato = @contrato
+    IF @contacto IS NOT NULL
+        UPDATE concesiones.Empresa
+        SET contacto = @contacto
         WHERE id_empresa = @id_empresa;
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.Empresa_Eliminar
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Eliminar
     @id_empresa INT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Empresa WHERE id_empresa = @id_empresa)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
         SET @v_errores = @v_errores + 'La empresa no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa where id_empresa = @id_empresa AND estado = 1)
+        SET @v_errores = @v_errores + 'La empresa ya está deshabilitada. ';
     
     IF @v_errores <> ''
     BEGIN
@@ -99,29 +102,30 @@ BEGIN
         RETURN;
     END
 
-    UPDATE consesiones.Empresa SET estado = 1 WHERE id_empresa = @id_empresa;
+    UPDATE concesiones.Empresa SET estado = 1 WHERE id_empresa = @id_empresa;
 
 END
 GO
 
 -- Concesion
 
-CREATE OR ALTER PROCEDURE consesiones.Concesion_Nueva
+CREATE OR ALTER PROCEDURE concesiones.Concesion_Nueva
     @id_empresa INT,
     @id_parque INT,
     @tipo_actividad VARCHAR(100),
     @fecha_inicio DATE,
-    @fecha_fin DATE = NULL,
-    @valor_alquiler DECIMAL(18, 2) = NULL
+    @valor_alquiler DECIMAL(18, 2),
+    @fecha_fin DATE = NULL
+    
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Empresa WHERE id_empresa = @id_empresa AND estado = 0)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa AND estado = 0)
         SET @v_errores = @v_errores + 'La empresa no existe o está inactiva. ';
     
-    IF NOT EXISTS (SELECT 1 FROM ParquesNacionales.Parque WHERE id_parque = @id_parque)
+    IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE id_parque = @id_parque)
         SET @v_errores = @v_errores + 'El parque no existe. ';
 
     IF @tipo_actividad IS NULL OR LTRIM(RTRIM(@tipo_actividad)) = ''
@@ -133,7 +137,7 @@ BEGIN
     IF @fecha_fin IS NOT NULL AND @fecha_fin < @fecha_inicio
         SET @v_errores = @v_errores + 'La fecha de fin no puede ser anterior a la fecha de inicio. ';
 
-    IF @valor_alquiler IS NOT NULL AND @valor_alquiler < 0
+    IF @valor_alquiler IS NULL OR @valor_alquiler <= 0
         SET @v_errores = @v_errores + 'El valor del alquiler es obligatorio y debe ser positivo. ';
 
     IF @v_errores <> ''
@@ -142,12 +146,13 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO consesiones.Concesion (id_empresa, id_parque, tipo_actividad, fecha_inicio, fecha_fin, valor_alquiler)
+    INSERT INTO concesiones.Concesion (id_empresa, id_parque, tipo_actividad, fecha_inicio, fecha_fin, valor_alquiler)
     VALUES (@id_empresa, @id_parque, @tipo_actividad, @fecha_inicio, @fecha_fin, @valor_alquiler);
+
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.Concesion_Modificar
+CREATE OR ALTER PROCEDURE concesiones.Concesion_Modificar
     @id_concesion INT,
     @tipo_actividad VARCHAR(100) = NULL,
     @fecha_inicio DATE = NULL,
@@ -158,13 +163,13 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Concesion WHERE id_concesion = @id_concesion)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion)
         SET @v_errores = @v_errores + 'La concesión no existe. ';
 
     IF @fecha_inicio IS NOT NULL AND @fecha_fin IS NOT NULL AND @fecha_fin < @fecha_inicio
         SET @v_errores = @v_errores + 'La fecha de fin no puede ser anterior a la fecha de inicio. ';
 
-    IF @valor_alquiler IS NOT NULL AND @valor_alquiler < 0
+    IF @valor_alquiler IS NOT NULL AND @valor_alquiler <= 0
         SET @v_errores = @v_errores + 'El valor del alquiler debe ser positivo. ';
 
     IF @v_errores <> ''
@@ -174,37 +179,40 @@ BEGIN
     END
 
     IF @tipo_actividad IS NOT NULL
-        UPDATE consesiones.Concesion
+        UPDATE concesiones.Concesion
         SET tipo_actividad = @tipo_actividad
         WHERE id_concesion = @id_concesion;
 
     IF @fecha_inicio IS NOT NULL
-        UPDATE consesiones.Concesion
+        UPDATE concesiones.Concesion
         SET fecha_inicio = @fecha_inicio
         WHERE id_concesion = @id_concesion;
 
     IF @fecha_fin IS NOT NULL
-        UPDATE consesiones.Concesion
+        UPDATE concesiones.Concesion
         SET fecha_fin = @fecha_fin
         WHERE id_concesion = @id_concesion;
     
     IF @valor_alquiler IS NOT NULL
-        UPDATE consesiones.Concesion
+        UPDATE concesiones.Concesion
         SET valor_alquiler = @valor_alquiler
         WHERE id_concesion = @id_concesion;
 
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.Concesion_Eliminar
+CREATE OR ALTER PROCEDURE concesiones.Concesion_Eliminar
     @id_concesion INT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Concesion WHERE id_concesion = @id_concesion)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion)
         SET @v_errores = @v_errores + 'La concesión no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.Concesion where id_concesion = @id_concesion AND estado = 1)
+        SET @v_errores = @v_errores + 'La concesión ya está deshabilitada. ';
 
     IF @v_errores <> ''
     BEGIN
@@ -212,13 +220,13 @@ BEGIN
         RETURN;
     END
 
-    UPDATE consesiones.Concesion SET estado = 1 WHERE id_concesion = @id_concesion;
+    UPDATE concesiones.Concesion SET estado = 1 WHERE id_concesion = @id_concesion;
 END
 GO
 
 -- PagoConcesion
 
-CREATE OR ALTER PROCEDURE consesiones.PagoConcesion_Nuevo
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Nuevo
     @id_concesion INT,
     @fecha_pago DATE,
     @periodo DATE,
@@ -227,8 +235,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
+    
+    SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.Concesion WHERE id_concesion = @id_concesion AND estado = 0)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion AND estado = 0)
         SET @v_errores = @v_errores + 'La concesión no existe o está inactiva. ';
 
     IF @fecha_pago IS NULL
@@ -237,7 +247,11 @@ BEGIN
     IF @periodo IS NULL
         SET @v_errores = @v_errores + 'El período es obligatorio. ';
 
-    IF @monto IS NULL OR @monto < 0
+    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_concesion = @id_concesion AND periodo = @periodo)
+        SET @v_errores = @v_errores + 'Ya existe un pago para este período. ';
+
+    -- Cambiar por mayor o igual a 0 si se permiten pagos de $0
+    IF @monto IS NULL OR @monto <= 0
         SET @v_errores = @v_errores + 'El monto es obligatorio y debe ser positivo. ';
 
     IF @v_errores <> ''
@@ -246,13 +260,13 @@ BEGIN
         RETURN;
     END
 
-    INSERT INTO consesiones.PagoConcesion (id_concesion, fecha_pago, periodo, monto)
+    INSERT INTO concesiones.PagoConcesion (id_concesion, fecha_pago, periodo, monto)
     VALUES (@id_concesion, @fecha_pago, @periodo, @monto);
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.PagoConcesion_Modificar
-    @id_pago_concesion INT,
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Modificar
+    @id_pago INT,
     @fecha_pago DATE = NULL,
     @periodo DATE = NULL,
     @monto DECIMAL(18, 2) = NULL
@@ -261,10 +275,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.PagoConcesion WHERE id_pago_concesion = @id_pago_concesion)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
         SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
 
-    IF @monto IS NOT NULL AND @monto < 0
+    IF @monto IS NOT NULL AND @monto <= 0
         SET @v_errores = @v_errores + 'El monto debe ser positivo. ';
 
     IF @v_errores <> ''
@@ -274,31 +288,35 @@ BEGIN
     END
 
     IF @fecha_pago IS NOT NULL
-        UPDATE consesiones.PagoConcesion
+        UPDATE concesiones.PagoConcesion
         SET fecha_pago = @fecha_pago
-        WHERE id_pago_concesion = @id_pago_concesion;
+        WHERE id_pago = @id_pago;
 
     IF @periodo IS NOT NULL
-        UPDATE consesiones.PagoConcesion
+        SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
+        UPDATE concesiones.PagoConcesion
         SET periodo = @periodo
-        WHERE id_pago_concesion = @id_pago_concesion;
+        WHERE id_pago = @id_pago;
 
     IF @monto IS NOT NULL
-        UPDATE consesiones.PagoConcesion
+        UPDATE concesiones.PagoConcesion
         SET monto = @monto  
-        WHERE id_pago_concesion = @id_pago_concesion;
+        WHERE id_pago = @id_pago;
 END
 GO
 
-CREATE OR ALTER PROCEDURE consesiones.PagoConcesion_Eliminar
-    @id_pago_concesion INT
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Eliminar
+    @id_pago INT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM consesiones.PagoConcesion WHERE id_pago_concesion = @id_pago_concesion)
+    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
         SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion where id_pago = @id_pago AND estado = 1)
+        SET @v_errores = @v_errores + 'El pago de concesión ya está deshabilitado. ';
 
     IF @v_errores <> ''
     BEGIN
@@ -306,6 +324,6 @@ BEGIN
         RETURN;
     END
 
-    UPDATE consesiones.PagoConcesion SET estado = 1 WHERE id_pago_concesion = @id_pago_concesion;
+    UPDATE concesiones.PagoConcesion SET estado = 1 WHERE id_pago = @id_pago;
 END
 GO
