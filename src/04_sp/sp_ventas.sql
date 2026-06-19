@@ -397,3 +397,26 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE ventas.Ticket_Eliminar    --	BAJA TICKET
+    @id_ticket INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_ticket = @id_ticket)
+        SET @v_errores += 'El ticket no existe. ';
+
+    IF EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_ticket = @id_ticket AND estado = 1)
+        SET @v_errores += 'El ticket ya está dado de baja. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    UPDATE ventas.Ticket SET estado = 1 WHERE id_ticket = @id_ticket;
+END
+GO
