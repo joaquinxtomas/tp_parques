@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<SqlWorkbenchSqlProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Name="TP_ParquesNacionales">
+  <Items>
+    <LogicalFolder Name="Connections" Type="2" Sorted="true">
+      <Items>
+        <ConnectionNode Name="JIMENMAU-W11\SQLEXPRESS:SADESA-GLOBAL\LocalAdmin">
+          <Created>2026-06-19T11:44:38.4243617-03:00</Created>
+          <Type>SQL</Type>
+          <Server>JIMENMAU-W11\SQLEXPRESS</Server>
+          <UserName />
+          <Authentication>Windows Authentication</Authentication>
+          <InitialDB>ParquesNacionales</InitialDB>
+          <LoginTimeout>30</LoginTimeout>
+          <TrustServerCertificate>False</TrustServerCertificate>
+          <HostNameInServerCertificate />
+          <EncryptionOption>False</EncryptionOption>
+          <ExecutionTimeout>0</ExecutionTimeout>
+          <ConnectionProtocol>NotSpecified</ConnectionProtocol>
+          <ApplicationName>Microsoft SQL Server Management Studio - Query</ApplicationName>
+        </ConnectionNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Queries" Type="0" Sorted="true">
+      <Items>
+        <FileNode Name="01_create_database.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>01_create_database.sql</FullPath>
+        </FileNode>
+        <FileNode Name="01_create_schemas.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>01_create_schemas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="01_create_tables.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>01_create_tables.sql</FullPath>
+        </FileNode>
+        <FileNode Name="Reset.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>Reset.sql</FullPath>
+        </FileNode>
+        <FileNode Name="sp_actividades.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>sp_actividades.sql</FullPath>
+        </FileNode>
+        <FileNode Name="sp_concesiones.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>sp_concesiones.sql</FullPath>
+        </FileNode>
+        <FileNode Name="sp_ventas.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>sp_ventas.sql</FullPath>
+        </FileNode>
+        <FileNode Name="usp_parques.sql">
+          <AssociatedConnectionMoniker>8c91a03d-f9b4-46c0-a305-b5dcc79ff907:JIMENMAU-W11\SQLEXPRESS:True</AssociatedConnectionMoniker>
+          <AssociatedConnSrvName>JIMENMAU-W11\SQLEXPRESS</AssociatedConnSrvName>
+          <AssociatedConnUserName />
+          <FullPath>usp_parques.sql</FullPath>
+        </FileNode>
+      </Items>
+    </LogicalFolder>
+    <LogicalFolder Name="Miscellaneous" Type="3" Sorted="true">
+      <Items />
+    </LogicalFolder>
+  </Items>
+</SqlWorkbenchSqlProject>
