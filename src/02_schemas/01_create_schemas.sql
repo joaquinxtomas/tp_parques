@@ -25,6 +25,7 @@ IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'importacion')
 	EXEC('CREATE SCHEMA importacion')
 GO
 
+
 -- TEST DE CREACIÓN
 SELECT name, schema_id, principal_id
 FROM sys.schemas

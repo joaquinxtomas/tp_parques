@@ -380,3 +380,22 @@ BEGIN
 	);
 END
 GO
+
+-- SCHEMA IMPORTACION
+
+IF NOT EXISTS (
+	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
+	AND TABLE_NAME = 'LogImportacion'
+)
+BEGIN 
+	CREATE TABLE importacion.LogImportacion(
+		id_log INT IDENTITY(1,1) PRIMARY KEY,
+		tipo_archivo VARCHAR(50) NOT NULL,
+		nombre_archivo VARCHAR(100) NOT NULL,
+		fecha DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+		registros_ok INT NOT NULL DEFAULT 0 CHECK (registros_ok >= 0),
+		errores INT NOT NULL DEFAULT 0 CHECK (errores >= 0),
+		detalle VARCHAR(200) NULL
+	)
+END
+GO
