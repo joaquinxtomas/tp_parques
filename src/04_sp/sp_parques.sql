@@ -51,7 +51,7 @@ CREATE OR ALTER PROCEDURE parques.ModificarParque --	MODIFICACION
     @id_parque      INT,
     @nombre         VARCHAR(100),
     @id_tipo_parque INT,
-	@provincia         VARCHAR(100),
+	@provincia         VARCHAR(100) = NULL,
     @region         VARCHAR(100) = NULL,
     @latitud        DECIMAL(9,6) = NULL,
     @longitud       DECIMAL(9,6) = NULL,
@@ -135,19 +135,25 @@ GO
 
 -- PRECONDICIONES: tipos de parque necesarios para las pruebas
 BEGIN TRY
-    EXEC parques.InsertarTipoDeParque @descripcion = 'Parque Nacional';
-END TRY BEGIN CATCH PRINT 'Precondicion 1: ' + ERROR_MESSAGE(); END CATCH
+    EXEC parques.InsertarTipoDeParque @descripcion = 'Parque Acuatico';
+END TRY 
+BEGIN CATCH 
+	PRINT 'Precondicion 1: ' + ERROR_MESSAGE(); 
+	END CATCH
 GO
 BEGIN TRY
     EXEC parques.InsertarTipoDeParque @descripcion = 'Reserva Natural';
-END TRY BEGIN CATCH PRINT 'Precondicion 2: ' + ERROR_MESSAGE(); END CATCH
+END TRY 
+BEGIN CATCH 
+	PRINT 'Precondicion 2: ' + ERROR_MESSAGE(); 
+END CATCH
 GO
 
 -- CASO 1: Alta correcta con coordenadas
 -- Esperado: inserta sin error
 BEGIN TRY
     EXEC parques.InsertarParque
-        @nombre = 'Los Glaciares', @id_tipo_parque = 1,
+        @nombre = 'Los Glaciares', @id_tipo_parque = 1, @provincia = 'Salta',
         @region = 'Santa Cruz', @latitud = -50.476100,
         @longitud = -73.037700, @superficie = 726927.00;
     PRINT 'CASO 1 OK: parque insertado con coordenadas';
