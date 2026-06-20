@@ -293,10 +293,12 @@ BEGIN
         WHERE id_pago = @id_pago;
 
     IF @periodo IS NOT NULL
+    BEGIN
         SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
         UPDATE concesiones.PagoConcesion
         SET periodo = @periodo
         WHERE id_pago = @id_pago;
+    END
 
     IF @monto IS NOT NULL
         UPDATE concesiones.PagoConcesion
