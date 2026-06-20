@@ -2,6 +2,9 @@
 --  INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
 --  Descripcion: Creacion de los STORED PROCEDURES de las operaciones ABM en tipos de ventas
 
+-- CAMBIAR NOMBRE DE TICKET A ENTRADA EN TABLAS Y SP
+-- TIPO DE VISITANTE "NO RESIDENTE"
+
 USE ParquesNacionales;
 GO
 
@@ -214,9 +217,9 @@ BEGIN
 END
 GO
 
--- Tickets
+-- ENTRADA
 
-CREATE OR ALTER PROCEDURE ventas.Ticket_Nuevo  --	ALTA TICKET
+CREATE OR ALTER PROCEDURE ventas.Entrada_Nuevo  --	ALTA ENTRADA
     @id_parque  INT,
     @pto_venta  INT,
     @fecha      DATETIME2(0),
@@ -236,7 +239,7 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
     DECLARE @total     DECIMAL(12,2) = 0;
-    DECLARE @id_ticket INT;
+    DECLARE @id_entrada INT;
 
     DECLARE @precio_1  DECIMAL(10,2),
         @precio_2  DECIMAL(10,2),
@@ -360,33 +363,33 @@ BEGIN
                    + ISNULL(@precio_3 * @cantidad_3, 0) + ISNULL(@precio_4 * @cantidad_4, 0)
                    + ISNULL(@precio_5 * @cantidad_5, 0);
         
-        INSERT INTO ventas.Ticket (id_parque, pto_venta, nro_ticket, fecha, forma_pago, total)
+        INSERT INTO ventas.Entrada (id_parque, pto_venta, nro_ticket, fecha, forma_pago, total)
         VALUES (@id_parque, @pto_venta, 0, @fecha, @forma_pago, @total);
 
-        SET @id_ticket = SCOPE_IDENTITY();
+        SET @id_entrada = SCOPE_IDENTITY();
 
-        UPDATE ventas.Ticket
-        SET nro_ticket = @id_parque * 1000000 + @id_ticket
-        WHERE id_ticket = @id_ticket;
+        UPDATE ventas.Entrada
+        SET nro_ticket = @id_parque * 1000000 + @id_entrada
+        WHERE id_entrada = @id_entrada;
 
         INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
-        VALUES (@id_ticket, @id_tipo_1, @cantidad_1, @precio_1, @cantidad_1 * @precio_1);
+        VALUES (@id_entrada, @id_tipo_1, @cantidad_1, @precio_1, @cantidad_1 * @precio_1);
 
         IF @id_tipo_2 IS NOT NULL
             INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
-            VALUES (@id_ticket, @id_tipo_2, @cantidad_2, @precio_2, @cantidad_2 * @precio_2);
+            VALUES (@id_entrada, @id_tipo_2, @cantidad_2, @precio_2, @cantidad_2 * @precio_2);
 
         IF @id_tipo_3 IS NOT NULL
             INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
-            VALUES (@id_ticket, @id_tipo_3, @cantidad_3, @precio_3, @cantidad_3 * @precio_3);
+            VALUES (@id_entrada, @id_tipo_3, @cantidad_3, @precio_3, @cantidad_3 * @precio_3);
 
         IF @id_tipo_4 IS NOT NULL
             INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
-            VALUES (@id_ticket, @id_tipo_4, @cantidad_4, @precio_4, @cantidad_4 * @precio_4);
+            VALUES (@id_entrada, @id_tipo_4, @cantidad_4, @precio_4, @cantidad_4 * @precio_4);
 
         IF @id_tipo_5 IS NOT NULL
             INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
-            VALUES (@id_ticket, @id_tipo_5, @cantidad_5, @precio_5, @cantidad_5 * @precio_5);
+            VALUES (@id_entrada, @id_tipo_5, @cantidad_5, @precio_5, @cantidad_5 * @precio_5);
 
         COMMIT TRANSACTION;
     END TRY
