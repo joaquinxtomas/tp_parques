@@ -167,7 +167,7 @@ GO
 
 IF NOT EXISTS (
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'actividades'
-	AND TABLE_NAME = 'TcketsAtraccion')
+	AND TABLE_NAME = 'TicketsAtraccion')
 BEGIN
 	CREATE TABLE actividades.TicketsAtraccion(
 		id_ticket_atraccion INT IDENTITY(1,1) NOT NULL,
