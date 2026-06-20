@@ -17,6 +17,7 @@ BEGIN
 END
 GO
 
+
 IF NOT EXISTS (
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'parques'
 	AND TABLE_NAME = 'Parque')
@@ -25,6 +26,7 @@ BEGIN
 		id_parque INT IDENTITY(1,1) NOT NULL,
 		nombre VARCHAR(100) NOT NULL,
 		id_tipo_parque INT NOT NULL,
+		provincia VARCHAR(100) NULL,
 		region VARCHAR(100) NULL,
 		latitud DECIMAL(9,6) NULL,
 		longitud DECIMAL(9,6) NULL,
@@ -264,7 +266,7 @@ BEGIN
 		id_tipo_visitante INT NOT NULL,
 		cantidad INT NOT NULL,
 		precio_unit DECIMAL(10,2) NOT NULL,
-		subtotal DECIMAL(12,2) NOT NULL
+		subtotal DECIMAL(12,2) NOT NULL,
 
 		CONSTRAINT PK_TicketVisitante PRIMARY KEY (id_ticket_visitantes),
 		CONSTRAINT FK_TicketVisitante_Ticket FOREIGN KEY (id_ticket)
