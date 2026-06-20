@@ -25,9 +25,10 @@ BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
-
-    INSERT INTO parques.TipoParque (descripcion)
-    VALUES (@descripcion);
+	IF EXISTS (SELECT 1 from Parques.TipoParque WHERE descripcion = @descripcion and estado =1)
+		UPDATE parques.TipoParque SET estado = 0 WHERE descripcion = @descripcion;
+    ELSE 
+		INSERT INTO parques.TipoParque (descripcion) VALUES (@descripcion);
 END
 GO
 
@@ -82,7 +83,6 @@ BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
-
     UPDATE parques.TipoParque SET estado = 1 WHERE id_tipo_parque = @id_tipo_parque;
 END
 GO
@@ -98,7 +98,7 @@ BEGIN CATCH
     PRINT 'CASO 1 ERROR inesperado: ' + ERROR_MESSAGE();
 END CATCH
 GO
-SELECT * FROM parques.TipoParque WHERE descripcion = 'Parque Nacional';
+SELECT * FROM parques.tipoParque WHERE descripcion = 'Parque Nacional';
 GO
 
 -- CASO 2: Alta con descripcion vacia
@@ -126,7 +126,7 @@ GO
 -- CASO 4: Modificacion correcta
 -- Esperado: actualiza la descripcion
 BEGIN TRY
-    EXEC parques.ModificarTipoDeParque @id_tipo_parque = 1, @descripcion = 'Parque Nacional Federal';
+    EXEC parques.ModificarTipoDeParque @id_tipo_parque = 1, @descripcion = 'Parque Acuatico';
     PRINT 'CASO 4 OK: tipo de parque modificado';
 END TRY
 BEGIN CATCH
