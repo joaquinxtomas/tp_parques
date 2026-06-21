@@ -57,7 +57,8 @@ BEGIN
 	CREATE TABLE personal.GuiaAutorizado(
 		id_guia INT IDENTITY(1,1) NOT NULL,
 		nombre VARCHAR(50) NOT NULL,
-		dni VARCHAR(10) NOT NULL,
+		dni VARBINARY(256) NOT NULL,
+		dni_hash VARBINARY(32) NOT NULL,
 		especialidad VARCHAR(100) NULL,
 		titulo VARCHAR(100) NULL,
 		vigencia_desde DATE NOT NULL,
@@ -65,10 +66,7 @@ BEGIN
 		estado BIT NOT NULL CONSTRAINT DF_guia_autorizado DEFAULT(0),
 
 		CONSTRAINT PK_GuiaAutorizado PRIMARY KEY (id_guia),
-		CONSTRAINT UQ_GuiaAutorizado_DNI UNIQUE (dni),
-		CONSTRAINT CK_GuiaAutorizado_DNIFormato CHECK (
-			dni NOT LIKE '%[^0-9]%' AND LEN(dni) BETWEEN 7 AND 8
-		),
+		CONSTRAINT UQ_GuiaAutorizado_DNI UNIQUE (dni_hash),
 		CONSTRAINT CK_GuiaAutorizado_VigenciaValida CHECK(
 			vigencia_hasta IS NULL OR vigencia_hasta >= vigencia_desde
 		)
@@ -83,20 +81,18 @@ BEGIN
 	CREATE TABLE personal.Guardaparque(
 		id_guardaparque INT IDENTITY (1,1) NOT NULL,
 		nombre VARCHAR(100) NOT NULL,
-		dni VARCHAR(10) NOT NULL,
+		dni VARBINARY(256) NOT NULL,
+		dni_hash VARBINARY(32) NOT NULL,
 		vigencia_desde DATE NOT NULL,
 		vigencia_hasta DATE NULL,
 		activo BIT NOT NULL CONSTRAINT DF_Guardaparque_Activo DEFAULT(0),
 		estado BIT NOT NULL CONSTRAINT DF_guardparque_estado DEFAULT(0),
 
 		CONSTRAINT PK_Guardaparque PRIMARY KEY (id_guardaparque),
-		CONSTRAINT UQ_Guardaparque_DNI UNIQUE(dni),
-		CONSTRAINT CK_Guardaparque_DNIFormato CHECK (
-			dni NOT LIKE '%[^0-9]%' AND LEN(dni) BETWEEN 7 AND 8
-		),
+		CONSTRAINT UQ_Guardaparque_DNI UNIQUE(dni_hash),
 		CONSTRAINT CK_Guardaparque_VigenciaValida CHECK(
 			vigencia_hasta IS NULL OR vigencia_hasta >= vigencia_desde
-		)	
+		)
 	);
 END
 GO
