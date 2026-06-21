@@ -2,8 +2,8 @@
 --  INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
 --  Descripcion: Creacion de los STORED PROCEDURES de las operaciones ABM en tipos de ventas
 
--- CAMBIAR NOMBRE DE TICKET A ENTRADA EN TABLAS Y SP
--- TIPO DE VISITANTE "NO RESIDENTE"
+--  NOTAS:
+--      TIPO DE VISITANTE "NO RESIDENTE" es "EXTRANJERO"
 
 USE ParquesNacionales;
 GO
