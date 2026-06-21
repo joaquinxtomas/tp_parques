@@ -155,10 +155,6 @@ BEGIN
     ELSE IF @v_estado = 1
         SET @v_errores += 'La atraccion ya está dada de baja. ';
 
-    --duda, dar de baja tanto atraccion como tour o bloquear la baja de la atraccion porque hay tours asociados
-    IF EXISTS (SELECT 1 FROM personal.TourGuia WHERE id_atraccion = @id_atraccion)
-        SET @v_errores += 'No es posible eliminar. Existen tours asociados a esta atraccion. ';
-
     IF @v_errores <> ''
     BEGIN
         THROW 50000, @v_errores, 1;
@@ -167,7 +163,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
         UPDATE actividades.Atraccion
-        SET estado = 1; --estado de borrado logico
+        SET estado = 1 --estado de borrado logico
         WHERE id_atraccion = @id_atraccion
         COMMIT TRANSACTION;
     END TRY
@@ -192,16 +188,16 @@ EXEC parques.usp_InsertarTipoDeParque 'Parque Nacional';
 
 -- Insertar parques de prueba si no existen
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu')
-    INSERT INTO parques.Parque (nombre, id_tipo_parque, ubicacion)
+    INSERT INTO parques.Parque (nombre, id_tipo_parque, region)
     VALUES ('Parque Nacional Iguazu', 
             (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion = 'Parque Nacional'),
-            'Misiones, Argentina');
+            'Litoral');
 
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi')
-    INSERT INTO parques.Parque (nombre, id_tipo_parque, ubicacion)
+    INSERT INTO parques.Parque (nombre, id_tipo_parque, region)
     VALUES ('Parque Nacional Nahuel Huapi',
             (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion = 'Parque Nacional'),
-            'Rio Negro / Neuquen, Argentina');
+            'Cuyo');
 GO
 
 -- Variables auxiliares con los id de parques
@@ -274,7 +270,6 @@ END CATCH
 PRINT '';
 
 
-
 -- CASOS NEGATIVOS (debe haber error personalizado)
 -- caso de inserción con el mismo nombre en el mismo parque
 BEGIN TRY
@@ -320,3 +315,210 @@ FROM actividades.Atraccion a
 INNER JOIN parques.Parque p ON p.id_parque = a.id_parque
 ORDER BY a.id_atraccion;
 GO
+
+-- SCRIPTS TESTING - MODIFICACION
+USE ParquesNacionales;
+GO
+
+--limpieza 
+DELETE FROM actividades.Atraccion WHERE nombre LIKE 'TEST_%';
+GO
+
+DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
+DECLARE @id_nahuel INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
+
+--carga de atracciones
+EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
+EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
+EXEC actividades.usp_InsertarAtraccion @id_nahuel, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
+
+DECLARE @id_sendero INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Sendero');
+DECLARE @id_mirador INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador');
+DECLARE @id_kayak INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Kayak');
+
+-- modificacion válida: cambia costo y duración
+EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1500, 75, 20, 'Senderismo';
+
+-- modificación válida: cambio de nombre
+EXEC actividades.usp_ActualizarAtraccion @id_mirador, 'TEST_Mirador Renovado', 0, 30, NULL, 'Avistaje';
+
+-- casos negativos
+EXEC actividades.usp_ActualizarAtraccion 99999, 'Fantasma', 100, 30, 10, 'Senderismo';        -- no existe
+EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Kayak', 1500, 75, 20, 'Senderismo';  -- nombre ok si kayak está en otro parque
+EXEC actividades.usp_ActualizarAtraccion @id_kayak, 'TEST_Mirador Renovado', 2500, 90, 10, 'Acuatica';  -- nombre libre, está en otro parque
+EXEC actividades.usp_ActualizarAtraccion @id_sendero, '', -100, -5, 0, '';                    -- multiples errores
+
+-- modificarse a si mismo
+EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1800, 80, 25, 'Senderismo';
+
+-- SCRIPTS TESTING - BAJA
+
+-- baja ok
+EXEC actividades.usp_EliminarAtraccion 12;
+
+-- casos negativos
+EXEC actividades.usp_EliminarAtraccion 99999;     -- no existe
+EXEC actividades.usp_EliminarAtraccion 12;  -- ya está dada de baja
+
+-- ver como quedó la tabla
+
+SELECT id_atraccion, nombre, costo, duracion, cupo_maximo, tipo, estado
+FROM actividades.Atraccion
+WHERE nombre LIKE 'TEST_%'
+ORDER BY id_atraccion;
+
+---------------------------------------------------------------------------------------------------------
+/* TOURGUIA */
+
+-- ALTA
+CREATE OR ALTER PROCEDURE actividades.usp_InsertarTourGuia
+    @id_atraccion INT,
+    @id_guia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF @id_atraccion IS NULL
+        SET @v_errores += 'El id de la atraccion es obligatorio. ';
+    ELSE IF NOT EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion)
+        SET @v_errores += 'La atracción indicada no existe ';
+    ELSE IF EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion AND estado = 1)
+        SET @v_errores += 'La atracción está dada de baja. ';
+
+    IF @id_guia IS NULL
+        SET @v_errores += 'El id del guía asignado es obligatorio. ';
+    ELSE IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
+        SET @v_errores += 'El guía indicado no existe. ';
+    ELSE IF EXISTS (
+        SELECT 1 FROM personal.GuiaAutorizado
+        WHERE id_guia = @id_guia
+        AND vigencia_hasta IS NOT NULL
+        AND vigencia_desde <= vigencia_hasta
+    )
+        SET @v_errores += 'El guía no se encuentra en vigencia';
+
+    IF EXISTS (SELECT 1 FROM actividades.tourguia WHERE id_atraccion = @id_atraccion AND id_guia = @id_guia AND estado = 0)
+        SET @v_errores += 'El guía ya está asignado a esta atracción';
+
+    IF @v_errores <> ''
+    BEGIN
+        THROW 50000, @v_errores, 1;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        INSERT INTO actividades.TourGuia (id_atraccion, id_guia)
+        VALUES (@id_atraccion, @id_guia)
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- MODIFICACION (logica de negocio)
+--CREATE OR ALTER PROCEDURE actividades.usp_ActualizarTourGuia
+
+--BAJA
+CREATE OR ALTER PROCEDURE actividades.usp_EliminarTourGuia
+    @id_tour_guia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia)
+        SET @v_errores += 'El tour no existe. ';
+    ELSE IF EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia AND estado = 1)
+        SET @v_errores += 'El tour ya está dado de baja. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        THROW 50000, @v_errores,1;
+    END
+
+    BEGIN TRY 
+        BEGIN TRANSACTION;
+            UPDATE actividades.tourGuia
+            SET estado = 1
+            WHERE id_tour_guia = @id_tour_guia
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- SCRIPTS TESTING 
+
+USE ParquesNacionales;
+GO
+
+DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
+
+-- insertar guias de prueba
+IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '11111111')
+    INSERT INTO personal.GuiaAutorizado (nombre, dni, especialidad, titulo, vigencia_desde)
+    VALUES ('Guia Test 1', '11111111', 'Flora', 'Licenciado', '2024-01-01');
+
+IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '22222222')
+    INSERT INTO personal.GuiaAutorizado (nombre, dni, especialidad, titulo, vigencia_desde)
+    VALUES ('Guia Test 2', '22222222', 'Fauna', NULL, '2024-01-01');
+
+-- insertar atraccion de prueba
+IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva')
+    EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo';
+GO
+
+DECLARE @id_guia1 INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '11111111');
+DECLARE @id_guia2 INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '22222222');
+DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+
+-- ALTA
+
+-- casos válidos
+EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia1;
+EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia2;
+
+-- casos negativos
+EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia1;    -- duplicado
+EXEC actividades.usp_InsertarTourGuia @id_tour, 99999;        -- guía inexistente
+EXEC actividades.usp_InsertarTourGuia 99999, @id_guia1;       -- atracción inexistente
+EXEC actividades.usp_InsertarTourGuia NULL, NULL;              -- ambos null
+
+-- verificar como queda la tabla luego de los tests
+SELECT tg.id_tour_guia, a.nombre AS atraccion, g.nombre AS guia, tg.estado
+FROM actividades.TourGuia tg
+INNER JOIN actividades.Atraccion a ON a.id_atraccion = tg.id_atraccion
+INNER JOIN personal.GuiaAutorizado g ON g.id_guia = tg.id_guia
+WHERE a.nombre = 'TEST_Tour_Selva';
+GO
+
+-- BAJA
+
+DECLARE @id_asignacion INT = (
+    SELECT TOP 1 id_tour_guia FROM actividades.TourGuia 
+    WHERE id_guia = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '11111111')
+      AND estado = 0
+);
+
+-- caso válido
+EXEC actividades.usp_EliminarTourGuia @id_asignacion;
+
+-- casos negativos
+EXEC actividades.usp_EliminarTourGuia @id_asignacion;    -- ya dada de baja
+EXEC actividades.usp_EliminarTourGuia 99999;              -- no existe
+
+-- verificar como queda la tabla luego de los tests
+SELECT tg.id_tour_guia, a.nombre AS atraccion, g.nombre AS guia, tg.estado
+FROM actividades.TourGuia tg
+INNER JOIN actividades.Atraccion a ON a.id_atraccion = tg.id_atraccion
+INNER JOIN personal.GuiaAutorizado g ON g.id_guia = tg.id_guia
+WHERE a.nombre = 'TEST_Tour_Selva';

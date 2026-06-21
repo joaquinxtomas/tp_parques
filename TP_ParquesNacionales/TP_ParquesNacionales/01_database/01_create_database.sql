@@ -7,6 +7,3 @@ BEGIN
 	COLLATE Modern_Spanish_CI_AI;
 END
 GO
-
-USE ParquesNacionales;
-GO

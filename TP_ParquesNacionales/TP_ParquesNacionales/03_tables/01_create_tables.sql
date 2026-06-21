@@ -167,6 +167,26 @@ GO
 
 IF NOT EXISTS (
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'actividades'
+	AND TABLE_NAME = 'TicketsAtraccion')
+BEGIN
+	CREATE TABLE actividades.TicketsAtraccion(
+		id_ticket_atraccion INT IDENTITY(1,1) NOT NULL,
+		id_atraccion INT NOT NULL,
+		cantidad INT NOT NULL,
+		subtotal DECIMAL(12,2) NOT NULL,
+		estado BIT NOT NULL CONSTRAINT DF_tickets_atraccion_estado DEFAULT(0)
+
+		CONSTRAINT PK_TicketsAtraccion PRIMARY KEY(id_ticket_atraccion),
+		CONSTRAINT FK_TicketsAtraccion_Atraccion FOREIGN KEY (id_atraccion)
+			REFERENCES actividades.Atraccion(id_atraccion),
+		CONSTRAINT CK_TicketsAtraccion_CantidadPositiva CHECK (cantidad > 0),
+		CONSTRAINT CK_TicketsAtraccion_Subtotal CHECK (subtotal >= 0)
+	);
+END
+GO
+
+IF NOT EXISTS (
+	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'actividades'
 	AND TABLE_NAME = 'TourGuia')
 BEGIN
 	CREATE TABLE actividades.TourGuia(
@@ -229,10 +249,10 @@ GO
 
 IF NOT EXISTS(
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas'
-	AND TABLE_NAME = 'Ticket')
+	AND TABLE_NAME = 'Entrada')
 BEGIN
-	CREATE TABLE ventas.Ticket(
-		id_ticket INT IDENTITY(1,1) NOT NULL,
+	CREATE TABLE ventas.Entrada(
+		id_entrada INT IDENTITY(1,1) NOT NULL,
 		-- id_tipo_visitante INT NOT NULL, -- ya está en TicketVisitante para permitir tickets con múltiples tipos de visitantes
 		id_parque INT NOT NULL,
 		pto_venta INT NOT NULL,
@@ -240,16 +260,16 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_ticket_estado DEFAULT(0),
+		estado BIT NOT NULL CONSTRAINT DF_entrada_estado DEFAULT(0),
 
-		CONSTRAINT PK_Ticket PRIMARY KEY (id_ticket),
-		CONSTRAINT FK_Ticket_Parque FOREIGN KEY (id_parque)
+		CONSTRAINT PK_Entrada PRIMARY KEY (id_entrada),
+		CONSTRAINT FK_Entrada_Parque FOREIGN KEY (id_parque)
 			REFERENCES parques.Parque(id_parque),
-		-- CONSTRAINT FK_Ticket_TipoVisitante FOREIGN KEY (id_tipo_visitante)
+		-- CONSTRAINT FK_Entrada_TipoVisitante FOREIGN KEY (id_tipo_visitante)
 		-- 	REFERENCES ventas.TipoVisitante (id_tipo_visitante),
-		CONSTRAINT UQ_TicketPtoVentaNroTicket UNIQUE(pto_venta, nro_ticket),
-		CONSTRAINT CK_Ticket_TotalPositivo CHECK (total >= 0),
-		CONSTRAINT CK_Ticket_FormaPago CHECK (
+		CONSTRAINT UQ_EntradaPtoVentaNroTicket UNIQUE(pto_venta, nro_ticket),
+		CONSTRAINT CK_Entrada_TotalPositivo CHECK (total >= 0),
+		CONSTRAINT CK_Entrada_FormaPago CHECK (
 			forma_pago IN ('Efectivo', 'Débito', 'Crédito', 'Transferencia', 'QR')
 		)
 	);
@@ -380,5 +400,24 @@ BEGIN
 		CONSTRAINT UQ_PagoConcesion_ConcesionPeriodo UNIQUE(id_concesion, periodo),
 		CONSTRAINT CK_PagoConcesion_MontoPositivo CHECK (monto > 0)
 	);
+END
+GO
+
+-- SCHEMA IMPORTACION
+
+IF NOT EXISTS (
+	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
+	AND TABLE_NAME = 'LogImportacion'
+)
+BEGIN 
+	CREATE TABLE importacion.LogImportacion(
+		id_log INT IDENTITY(1,1) PRIMARY KEY,
+		tipo_archivo VARCHAR(50) NOT NULL,
+		nombre_archivo VARCHAR(100) NOT NULL,
+		fecha DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+		registros_ok INT NOT NULL DEFAULT 0 CHECK (registros_ok >= 0),
+		errores INT NOT NULL DEFAULT 0 CHECK (errores >= 0),
+		detalle VARCHAR(200) NULL
+	)
 END
 GO
