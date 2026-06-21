@@ -5,7 +5,7 @@ GO
 /* ATRACCION */
 
 /* ALTA */
-CREATE OR ALTER PROCEDURE actividades.usp_InsertarAtraccion  
+CREATE OR ALTER PROCEDURE actividades.InsertarAtraccion  
 	@id_parque INT,
 	@nombre VARCHAR(100),
 	@costo DECIMAL(10,2),
@@ -66,7 +66,7 @@ END
 GO
 
 /*MODIFICACION*/
-CREATE OR ALTER PROCEDURE actividades.usp_ActualizarAtraccion
+CREATE OR ALTER PROCEDURE actividades.ActualizarAtraccion
     @id_atraccion INT,
     @nombre VARCHAR(100),
     @costo DECIMAL(10,2),
@@ -138,7 +138,7 @@ END
 GO
 
 /* BAJA */
-CREATE OR ALTER PROCEDURE actividades.usp_EliminarAtraccion
+CREATE OR ALTER PROCEDURE actividades.EliminarAtraccion
     @id_atraccion INT
 AS
 BEGIN
@@ -184,7 +184,7 @@ GO
 -- PRECONDICIONES: asegurar que existan datos base
 
 -- Insertar tipo de parque si no existe
-EXEC parques.usp_InsertarTipoDeParque 'Parque Nacional';
+EXEC parques.InsertarTipoDeParque 'Parque Nacional';
 
 -- Insertar parques de prueba si no existen
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu')
@@ -207,7 +207,7 @@ DECLARE @id_nahuel INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'P
 -- INSERTS EXITOSOS
 -- caso de inserción normal
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = @id_iguazu,
         @nombre = 'Paseo por la Garganta del Diablo',
         @costo = 5000.00,
@@ -223,7 +223,7 @@ PRINT '';
 
 -- caso de inserción con costo 0
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = @id_iguazu,
         @nombre = 'Mirador Salto Bossetti',
         @costo = 0.00,
@@ -239,7 +239,7 @@ PRINT '';
 
 -- caso de inserción con duración y cupo maximo NULL
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = @id_nahuel,
         @nombre = 'Acceso libre al Cerro Campanario',
         @costo = 0.00,
@@ -255,7 +255,7 @@ PRINT '';
 
 -- caso de inserción de atracción con mismo nombre pero en otro parque
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = @id_nahuel,
         @nombre = 'Paseo por la Garganta del Diablo',  -- mismo nombre que primer caso
         @costo = 3500.00,
@@ -273,7 +273,7 @@ PRINT '';
 -- CASOS NEGATIVOS (debe haber error personalizado)
 -- caso de inserción con el mismo nombre en el mismo parque
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = @id_iguazu,
         @nombre = 'Paseo por la Garganta del Diablo',  -- ya existe en parque iguazu
         @costo = 5500.00,
@@ -288,7 +288,7 @@ PRINT '';
 
 -- caso de inserción de parque con id inexistente
 BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
+    EXEC actividades.InsertarAtraccion
         @id_parque = 99999,
         @nombre = 'Atraccion en parque fantasma',
         @costo = 1000.00,
@@ -328,37 +328,37 @@ DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'P
 DECLARE @id_nahuel INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
 
 --carga de atracciones
-EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
-EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
-EXEC actividades.usp_InsertarAtraccion @id_nahuel, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
+EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
+EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
+EXEC actividades.InsertarAtraccion @id_nahuel, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
 
 DECLARE @id_sendero INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Sendero');
 DECLARE @id_mirador INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador');
 DECLARE @id_kayak INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Kayak');
 
 -- modificacion válida: cambia costo y duración
-EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1500, 75, 20, 'Senderismo';
+EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1500, 75, 20, 'Senderismo';
 
 -- modificación válida: cambio de nombre
-EXEC actividades.usp_ActualizarAtraccion @id_mirador, 'TEST_Mirador Renovado', 0, 30, NULL, 'Avistaje';
+EXEC actividades.ActualizarAtraccion @id_mirador, 'TEST_Mirador Renovado', 0, 30, NULL, 'Avistaje';
 
 -- casos negativos
-EXEC actividades.usp_ActualizarAtraccion 99999, 'Fantasma', 100, 30, 10, 'Senderismo';        -- no existe
-EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Kayak', 1500, 75, 20, 'Senderismo';  -- nombre ok si kayak está en otro parque
-EXEC actividades.usp_ActualizarAtraccion @id_kayak, 'TEST_Mirador Renovado', 2500, 90, 10, 'Acuatica';  -- nombre libre, está en otro parque
-EXEC actividades.usp_ActualizarAtraccion @id_sendero, '', -100, -5, 0, '';                    -- multiples errores
+EXEC actividades.ActualizarAtraccion 99999, 'Fantasma', 100, 30, 10, 'Senderismo';        -- no existe
+EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Kayak', 1500, 75, 20, 'Senderismo';  -- nombre ok si kayak está en otro parque
+EXEC actividades.ActualizarAtraccion @id_kayak, 'TEST_Mirador Renovado', 2500, 90, 10, 'Acuatica';  -- nombre libre, está en otro parque
+EXEC actividades.ActualizarAtraccion @id_sendero, '', -100, -5, 0, '';                    -- multiples errores
 
 -- modificarse a si mismo
-EXEC actividades.usp_ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1800, 80, 25, 'Senderismo';
+EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1800, 80, 25, 'Senderismo';
 
 -- SCRIPTS TESTING - BAJA
 
 -- baja ok
-EXEC actividades.usp_EliminarAtraccion 12;
+EXEC actividades.EliminarAtraccion 12;
 
 -- casos negativos
-EXEC actividades.usp_EliminarAtraccion 99999;     -- no existe
-EXEC actividades.usp_EliminarAtraccion 12;  -- ya está dada de baja
+EXEC actividades.EliminarAtraccion 99999;     -- no existe
+EXEC actividades.EliminarAtraccion 12;  -- ya está dada de baja
 
 -- ver como quedó la tabla
 
@@ -366,12 +366,12 @@ SELECT id_atraccion, nombre, costo, duracion, cupo_maximo, tipo, estado
 FROM actividades.Atraccion
 WHERE nombre LIKE 'TEST_%'
 ORDER BY id_atraccion;
-
+GO
 ---------------------------------------------------------------------------------------------------------
 /* TOURGUIA */
 
 -- ALTA
-CREATE OR ALTER PROCEDURE actividades.usp_InsertarTourGuia
+CREATE OR ALTER PROCEDURE actividades.InsertarTourGuia
     @id_atraccion INT,
     @id_guia INT
 AS
@@ -474,7 +474,7 @@ IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '22222222')
 
 -- insertar atraccion de prueba
 IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva')
-    EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo';
+    EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo';
 GO
 
 DECLARE @id_guia1 INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '11111111');
@@ -484,14 +484,14 @@ DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nom
 -- ALTA
 
 -- casos válidos
-EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia1;
-EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia2;
+EXEC actividades.InsertarTourGuia @id_tour, @id_guia1;
+EXEC actividades.InsertarTourGuia @id_tour, @id_guia2;
 
 -- casos negativos
-EXEC actividades.usp_InsertarTourGuia @id_tour, @id_guia1;    -- duplicado
-EXEC actividades.usp_InsertarTourGuia @id_tour, 99999;        -- guía inexistente
-EXEC actividades.usp_InsertarTourGuia 99999, @id_guia1;       -- atracción inexistente
-EXEC actividades.usp_InsertarTourGuia NULL, NULL;              -- ambos null
+EXEC actividades.InsertarTourGuia @id_tour, @id_guia1;    -- duplicado
+EXEC actividades.InsertarTourGuia @id_tour, 99999;        -- guía inexistente
+EXEC actividades.InsertarTourGuia 99999, @id_guia1;       -- atracción inexistente
+EXEC actividades.InsertarTourGuia NULL, NULL;              -- ambos null
 
 -- verificar como queda la tabla luego de los tests
 SELECT tg.id_tour_guia, a.nombre AS atraccion, g.nombre AS guia, tg.estado
