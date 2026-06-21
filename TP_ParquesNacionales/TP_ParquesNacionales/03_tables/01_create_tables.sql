@@ -172,9 +172,10 @@ BEGIN
 	CREATE TABLE actividades.TicketsAtraccion(
 		id_ticket_atraccion INT IDENTITY(1,1) NOT NULL,
 		id_atraccion INT NOT NULL,
+		fecha DATETIME2(0) NOT NULL,
 		cantidad INT NOT NULL,
 		subtotal DECIMAL(12,2) NOT NULL,
-		estado BIT NOT NULL CONSTRAINT DF_tickets_atraccion_estado DEFAULT(0)
+		estado BIT NOT NULL CONSTRAINT DF_TicketsAstraccion_estado DEFAULT(0),
 
 		CONSTRAINT PK_TicketsAtraccion PRIMARY KEY(id_ticket_atraccion),
 		CONSTRAINT FK_TicketsAtraccion_Atraccion FOREIGN KEY (id_atraccion)
@@ -289,8 +290,8 @@ BEGIN
 		subtotal DECIMAL(12,2) NOT NULL,
 
 		CONSTRAINT PK_TicketVisitante PRIMARY KEY (id_ticket_visitantes),
-		CONSTRAINT FK_TicketVisitante_Ticket FOREIGN KEY (id_ticket)
-			REFERENCES ventas.Ticket(id_ticket),
+		CONSTRAINT FK_TicketVisitante_Entrada FOREIGN KEY (id_ticket)
+			REFERENCES ventas.Entrada(id_entrada),
 		CONSTRAINT FK_TicketVisitante_TipoVisitante FOREIGN KEY (id_tipo_visitante)
 			REFERENCES ventas.TipoVisitante(id_tipo_visitante),
 		CONSTRAINT CK_TicketVisitante_CantidadPositiva CHECK (cantidad > 0),
