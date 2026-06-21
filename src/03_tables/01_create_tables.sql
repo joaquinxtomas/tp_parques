@@ -290,8 +290,8 @@ BEGIN
 		subtotal DECIMAL(12,2) NOT NULL,
 
 		CONSTRAINT PK_TicketVisitante PRIMARY KEY (id_ticket_visitantes),
-		CONSTRAINT FK_TicketVisitante_Ticket FOREIGN KEY (id_ticket)
-			REFERENCES ventas.Ticket(id_ticket),
+		CONSTRAINT FK_TicketVisitante_Entrada FOREIGN KEY (id_ticket)
+			REFERENCES ventas.Entrada(id_entrada),
 		CONSTRAINT FK_TicketVisitante_TipoVisitante FOREIGN KEY (id_tipo_visitante)
 			REFERENCES ventas.TipoVisitante(id_tipo_visitante),
 		CONSTRAINT CK_TicketVisitante_CantidadPositiva CHECK (cantidad > 0),
