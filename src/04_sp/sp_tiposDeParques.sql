@@ -27,7 +27,7 @@ BEGIN
     END
 	IF EXISTS (SELECT 1 from Parques.TipoParque WHERE descripcion = @descripcion and estado =1)
 		UPDATE parques.TipoParque SET estado = 0 WHERE descripcion = @descripcion;
-    ELSE 
+    ELSE
 		INSERT INTO parques.TipoParque (descripcion) VALUES (@descripcion);
 END
 GO
