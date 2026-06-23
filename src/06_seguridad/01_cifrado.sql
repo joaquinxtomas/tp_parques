@@ -152,7 +152,7 @@ GO
 --
 -- ALTA (GuiaAutorizado_Nuevo / Guardaparque_Nuevo):
 --
---   DECLARE @claveCifrado NVARCHAR(128) = @claveCifrado_param;
+--   DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
 --
 --   -- Validar formato antes de cifrar (el CHECK fue eliminado de la tabla)
 --   IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
@@ -168,7 +168,7 @@ GO
 --
 -- CONSULTA con dni descifrado:
 --
---   DECLARE @claveCifrado NVARCHAR(128) = @claveCifrado_param;
+--   DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
 --   SELECT
 --       id_guia,
 --       nombre,
