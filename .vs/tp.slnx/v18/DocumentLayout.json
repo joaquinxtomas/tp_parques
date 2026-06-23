@@ -3,28 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\05_sp_importacion\\importacion_kml.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\05_sp_importacion\\importacion_kml.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\sp_tiposDeParques.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\04_sp\\sp_tiposDeParques.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\03_tables\\01_create_tables.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\03_tables\\01_create_tables.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\02_schemas\\01_create_schemas.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\02_schemas\\01_create_schemas.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\reset.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\04_sp\\reset.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\01_database\\01_create_database.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\01_database\\01_create_database.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\05_sp_importacion\\importacion_kml.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\05_sp_importacion\\importacion_kml.sql||{B5A506EB-11BE-4782-9A18-21265C2CA0B4}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,79 +18,31 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "sp_tiposDeParques.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (64))",
-              "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\sp_tiposDeParques.sql",
-              "RelativeDocumentMoniker": "src\\04_sp\\sp_tiposDeParques.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\sp_tiposDeParques.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (64))",
-              "RelativeToolTip": "src\\04_sp\\sp_tiposDeParques.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (64))",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:23:14.538Z",
-              "EditorCaption": " - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (64))"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "reset.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (79))",
-              "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\reset.sql",
-              "RelativeDocumentMoniker": "src\\04_sp\\reset.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\04_sp\\reset.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (79))",
-              "RelativeToolTip": "src\\04_sp\\reset.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (79))",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:19:02.192Z",
-              "EditorCaption": " - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (79))"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "01_create_schemas.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (52))",
-              "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\02_schemas\\01_create_schemas.sql",
-              "RelativeDocumentMoniker": "src\\02_schemas\\01_create_schemas.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\02_schemas\\01_create_schemas.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (52))",
-              "RelativeToolTip": "src\\02_schemas\\01_create_schemas.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (52))",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:18:50.914Z",
-              "EditorCaption": " - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (52))"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "01_create_database.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (51))",
-              "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\01_database\\01_create_database.sql",
-              "RelativeDocumentMoniker": "src\\01_database\\01_create_database.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\01_database\\01_create_database.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (51))",
-              "RelativeToolTip": "src\\01_database\\01_create_database.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (51))",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:18:26.929Z",
-              "EditorCaption": " - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (51))"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "01_create_tables.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (100))",
+              "DocumentIndex": 0,
+              "Title": "01_create_tables.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (69))",
               "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\03_tables\\01_create_tables.sql",
               "RelativeDocumentMoniker": "src\\03_tables\\01_create_tables.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\03_tables\\01_create_tables.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (100))",
-              "RelativeToolTip": "src\\03_tables\\01_create_tables.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (100))",
+              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\03_tables\\01_create_tables.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (69))",
+              "RelativeToolTip": "src\\03_tables\\01_create_tables.sql - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (69))",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:17:51.163Z",
-              "EditorCaption": " - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (100))"
+              "WhenOpened": "2026-06-23T02:34:14.516Z",
+              "EditorCaption": " - DESKTOP-MGP4342.master (DESKTOP-MGP4342\\Usuario (69))"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (98))",
+              "DocumentIndex": 1,
+              "Title": "importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (95))",
               "DocumentMoniker": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\05_sp_importacion\\importacion_kml.sql",
               "RelativeDocumentMoniker": "src\\05_sp_importacion\\importacion_kml.sql",
-              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\05_sp_importacion\\importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (98))",
-              "RelativeToolTip": "src\\05_sp_importacion\\importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (98))",
+              "ToolTip": "C:\\Users\\Usuario\\Documents\\MATERIAS\\BASES DE DATOS APLICADA\\tp\\src\\05_sp_importacion\\importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (95))",
+              "RelativeToolTip": "src\\05_sp_importacion\\importacion_kml.sql - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (95))",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000826|",
-              "WhenOpened": "2026-06-21T03:16:55.918Z",
-              "EditorCaption": " - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (98))"
+              "WhenOpened": "2026-06-23T01:37:29.193Z",
+              "EditorCaption": " - DESKTOP-MGP4342.ParquesNacionales (DESKTOP-MGP4342\\Usuario (95))"
             }
           ]
         }

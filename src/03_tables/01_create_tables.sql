@@ -298,6 +298,29 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS(
+	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas'
+	AND TABLE_NAME = 'RegistroVentas'
+)
+BEGIN
+CREATE TABLE ventas.RegistroVentas(
+	id_visita INT IDENTITY(1,1) PRIMARY KEY,
+	id_parque INT NULL, --CAMBIAR CUANDO TERMINEN LOS TESTEOS
+	region VARCHAR(50) NOT NULL,
+	anio INT NOT NULL,
+	mes VARCHAR(20) NOT NULL,
+	total_visitantes INT NOT NULL DEFAULT 0,
+	residentes INT NULL,
+	no_residentes INT NULL,
+	estado BIT NOT NULL DEFAULT 1,
+
+	CONSTRAINT FK_RegistroVentas_Parque
+		FOREIGN KEY (id_parque) REFERENCES parques.Parque(id_parque),
+	CONSTRAINT CK_RegistroVentas_Mes
+		CHECK(mes BETWEEN 1 AND 12)
+)
+END
+GO
 
 -- Ya no sería necesaria porque TicketVisitante permite múltiples tipos de visitantes por ticket y las actividades se hace otro ticket a parte, pero se deja para mantener el historial de la primera entrega
 -- IF NOT EXISTS (

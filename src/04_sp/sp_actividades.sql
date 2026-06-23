@@ -175,21 +175,18 @@ BEGIN
 END
 GO
 
-
+-------------------------------------------------------
 -- SCRIPTS TESTING - ALTA DE ATRACCION
 
 USE ParquesNacionales;
 GO
 
 -- PRECONDICIONES: asegurar que existan datos base
+EXEC parques.InsertarTipoDeParque 'Parque Nacional';
 
--- Insertar tipo de parque si no existe
-EXEC parques.usp_InsertarTipoDeParque 'Parque Nacional';
-
--- Insertar parques de prueba si no existen
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu')
     INSERT INTO parques.Parque (nombre, id_tipo_parque, region)
-    VALUES ('Parque Nacional Iguazu', 
+    VALUES ('Parque Nacional Iguazu',
             (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion = 'Parque Nacional'),
             'Litoral');
 
@@ -200,107 +197,68 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Nahu
             'Cuyo');
 GO
 
--- Variables auxiliares con los id de parques
-DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
-DECLARE @id_nahuel INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
+SELECT id_parque, nombre FROM parques.Parque
+WHERE nombre IN ('Parque Nacional Iguazu', 'Parque Nacional Nahuel Huapi');
 
--- INSERTS EXITOSOS
--- caso de inserción normal
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Paseo por la Garganta del Diablo',
-        @costo = 5000.00,
-        @duracion = 90,
-        @cupo_maximo = 25,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
+--test 1: caso normal
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 39,                                  
+    @nombre      = 'Paseo por la Garganta del Diablo',
+    @costo       = 5000.00,
+    @duracion    = 90,
+    @cupo_maximo = 25,
+    @tipo        = 'Senderismo';
+GO
 
--- caso de inserción con costo 0
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Mirador Salto Bossetti',
-        @costo = 0.00,
-        @duracion = 30,
-        @cupo_maximo = NULL,
-        @tipo = 'Avistaje';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
+-- test 2: insertar con costo 0 (atracción gratuita)
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 39,                                  
+    @nombre      = 'Mirador Salto Bossetti',
+    @costo       = 0.00,
+    @duracion    = 30,
+    @cupo_maximo = NULL,
+    @tipo        = 'Avistaje';
+GO
 
--- caso de inserción con duración y cupo maximo NULL
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = @id_nahuel,
-        @nombre = 'Acceso libre al Cerro Campanario',
-        @costo = 0.00,
-        @duracion = NULL,
-        @cupo_maximo = NULL,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
+-- test 3: insertar con duración y cupo NULL
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 40,                                  
+    @nombre      = 'Acceso libre al Cerro Campanario',
+    @costo       = 0.00,
+    @duracion    = NULL,
+    @cupo_maximo = NULL,
+    @tipo        = 'Senderismo';
+GO
 
--- caso de inserción de atracción con mismo nombre pero en otro parque
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = @id_nahuel,
-        @nombre = 'Paseo por la Garganta del Diablo',  -- mismo nombre que primer caso
-        @costo = 3500.00,
-        @duracion = 60,
-        @cupo_maximo = 20,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
+-- test 4: mismo nombre en otro parque (debe funcionar)
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 40,                                 
+    @nombre      = 'Paseo por la Garganta del Diablo',
+    @costo       = 3500.00,
+    @duracion    = 60,
+    @cupo_maximo = 20,
+    @tipo        = 'Senderismo';
+GO
 
+-- test 5 negativo: nombre duplicado en el mismo parque
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 39,                                 
+    @nombre      = 'Paseo por la Garganta del Diablo', -- ya existe en Iguazu
+    @costo       = 5500.00,
+    @duracion    = 90,
+    @cupo_maximo = 25,
+    @tipo        = 'Senderismo';
+GO
 
--- CASOS NEGATIVOS (debe haber error personalizado)
--- caso de inserción con el mismo nombre en el mismo parque
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Paseo por la Garganta del Diablo',  -- ya existe en parque iguazu
-        @costo = 5500.00,
-        @duracion = 90,
-        @cupo_maximo = 25,
-        @tipo = 'Senderismo';
-END TRY
-BEGIN CATCH
-    PRINT 'Rechazado: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
--- caso de inserción de parque con id inexistente
-BEGIN TRY
-    EXEC actividades.usp_InsertarAtraccion
-        @id_parque = 99999,
-        @nombre = 'Atraccion en parque fantasma',
-        @costo = 1000.00,
-        @duracion = 45,
-        @cupo_maximo = 15,
-        @tipo = 'Cultural';
-END TRY
-BEGIN CATCH
-    PRINT 'Rechazado: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
+-- test 6 negativo: id de parque inexistente
+EXEC actividades.usp_InsertarAtraccion
+    @id_parque   = 99999,
+    @nombre      = 'Atraccion en parque fantasma',
+    @costo       = 1000.00,
+    @duracion    = 45,
+    @cupo_maximo = 15,
+    @tipo        = 'Cultural';
+GO
 
 -- ver lo que quedo cargado luego de test
 SELECT 

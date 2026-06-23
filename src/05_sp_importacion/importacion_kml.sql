@@ -343,6 +343,14 @@ WHERE TABLE_NAME = 'Parque';
 EXEC importacion.ImportarParquesKML
      @ruta_archivo = 'C:\datasets finales\parques.kml';
 
+SELECT DISTINCT s.nombre_parque
+FROM importacion.CSVCrudoVisitas s
+LEFT JOIN parques.Parque p
+	ON p.nombre = TRIM(s.nombre_parque) COLLATE DATABASE_DEFAULT
+WHERE p.id_parque IS NULL
+AND TRIM(ISNULL(s.nombre_parque, '')) <> ''
+ORDER BY s.nombre_parque;
+
 -- Verificar resultado
 SELECT * FROM importacion.LogImportacion ORDER BY Fecha DESC;
 SELECT * FROM parques.Parque;
