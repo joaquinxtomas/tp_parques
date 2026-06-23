@@ -407,10 +407,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-    IF NOT EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_ticket = @id_ticket)
+    IF NOT EXISTS (SELECT 1 FROM ventas.Entrada WHERE id_entrada = @id_ticket)
         SET @v_errores += 'El ticket no existe. ';
 
-    IF EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_ticket = @id_ticket AND estado = 1)
+    IF EXISTS (SELECT 1 FROM ventas.Entrada WHERE id_entrada = @id_ticket AND estado = 1)
         SET @v_errores += 'El ticket ya está dado de baja. ';
 
     IF @v_errores <> ''
@@ -418,7 +418,6 @@ BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
-
-    UPDATE ventas.Ticket SET estado = 1 WHERE id_ticket = @id_ticket;
+    UPDATE ventas.Entrada SET estado = 1 WHERE id_entrada = @id_ticket;
 END
 GO
