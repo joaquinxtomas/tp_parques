@@ -184,13 +184,6 @@ GO
 -- PRECONDICIONES: asegurar que existan datos base
 EXEC parques.InsertarTipoDeParque 'Parque Nacional';
 
-<<<<<<< HEAD
-=======
--- Insertar tipo de parque si no existe
-EXEC parques.InsertarTipoDeParque 'Parque Nacional';
-
--- Insertar parques de prueba si no existen
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu')
     INSERT INTO parques.Parque (nombre, id_tipo_parque, region)
     VALUES ('Parque Nacional Iguazu',
@@ -207,7 +200,7 @@ GO
 SELECT id_parque, nombre FROM parques.Parque
 WHERE nombre IN ('Parque Nacional Iguazu', 'Parque Nacional Nahuel Huapi');
 
-<<<<<<< HEAD
+
 --test 1: caso normal
 EXEC actividades.usp_InsertarAtraccion
     @id_parque   = 39,                                  
@@ -247,72 +240,6 @@ EXEC actividades.usp_InsertarAtraccion
     @cupo_maximo = 20,
     @tipo        = 'Senderismo';
 GO
-=======
--- INSERTS EXITOSOS
--- caso de inserción normal
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Paseo por la Garganta del Diablo',
-        @costo = 5000.00,
-        @duracion = 90,
-        @cupo_maximo = 25,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
--- caso de inserción con costo 0
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Mirador Salto Bossetti',
-        @costo = 0.00,
-        @duracion = 30,
-        @cupo_maximo = NULL,
-        @tipo = 'Avistaje';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
--- caso de inserción con duración y cupo maximo NULL
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = @id_nahuel,
-        @nombre = 'Acceso libre al Cerro Campanario',
-        @costo = 0.00,
-        @duracion = NULL,
-        @cupo_maximo = NULL,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
--- caso de inserción de atracción con mismo nombre pero en otro parque
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = @id_nahuel,
-        @nombre = 'Paseo por la Garganta del Diablo',  -- mismo nombre que primer caso
-        @costo = 3500.00,
-        @duracion = 60,
-        @cupo_maximo = 20,
-        @tipo = 'Senderismo';
-    PRINT 'Insertada correctamente';
-END TRY
-BEGIN CATCH
-    PRINT 'ERROR: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 
 -- test 5 negativo: nombre duplicado en el mismo parque
 EXEC actividades.usp_InsertarAtraccion
@@ -324,7 +251,6 @@ EXEC actividades.usp_InsertarAtraccion
     @tipo        = 'Senderismo';
 GO
 
-<<<<<<< HEAD
 -- test 6 negativo: id de parque inexistente
 EXEC actividades.usp_InsertarAtraccion
     @id_parque   = 99999,
@@ -334,39 +260,6 @@ EXEC actividades.usp_InsertarAtraccion
     @cupo_maximo = 15,
     @tipo        = 'Cultural';
 GO
-=======
--- CASOS NEGATIVOS (debe haber error personalizado)
--- caso de inserción con el mismo nombre en el mismo parque
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = @id_iguazu,
-        @nombre = 'Paseo por la Garganta del Diablo',  -- ya existe en parque iguazu
-        @costo = 5500.00,
-        @duracion = 90,
-        @cupo_maximo = 25,
-        @tipo = 'Senderismo';
-END TRY
-BEGIN CATCH
-    PRINT 'Rechazado: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
--- caso de inserción de parque con id inexistente
-BEGIN TRY
-    EXEC actividades.InsertarAtraccion
-        @id_parque = 99999,
-        @nombre = 'Atraccion en parque fantasma',
-        @costo = 1000.00,
-        @duracion = 45,
-        @cupo_maximo = 15,
-        @tipo = 'Cultural';
-END TRY
-BEGIN CATCH
-    PRINT 'Rechazado: ' + ERROR_MESSAGE();
-END CATCH
-PRINT '';
-
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 
 -- ver lo que quedo cargado luego de test
 SELECT 
@@ -394,17 +287,10 @@ GO
 DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
 DECLARE @id_nahuel INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
 
-<<<<<<< HEAD
-EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
-EXEC actividades.usp_InsertarAtraccion @id_iguazu, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
-EXEC actividades.usp_InsertarAtraccion @id_nahuel, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
-GO
-=======
 --carga de atracciones
 EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
 EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
 EXEC actividades.InsertarAtraccion @id_nahuel, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 
 -- test 1 positivo: modificación válida, cambia costo y duración
 DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Sendero');
@@ -417,7 +303,6 @@ EXEC actividades.usp_ActualizarAtraccion
     @tipo         = 'Senderismo';
 GO
 
-<<<<<<< HEAD
 -- test 2 positivo: cambio de nombre
 DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador');
 EXEC actividades.usp_ActualizarAtraccion
@@ -471,39 +356,22 @@ EXEC actividades.usp_ActualizarAtraccion
     @cupo_maximo  = 0,
     @tipo         = '';
 GO
-=======
--- modificacion válida: cambia costo y duración
-EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1500, 75, 20, 'Senderismo';
-
--- modificación válida: cambio de nombre
-EXEC actividades.ActualizarAtraccion @id_mirador, 'TEST_Mirador Renovado', 0, 30, NULL, 'Avistaje';
-
--- casos negativos
-EXEC actividades.ActualizarAtraccion 99999, 'Fantasma', 100, 30, 10, 'Senderismo';        -- no existe
-EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Kayak', 1500, 75, 20, 'Senderismo';  -- nombre ok si kayak está en otro parque
-EXEC actividades.ActualizarAtraccion @id_kayak, 'TEST_Mirador Renovado', 2500, 90, 10, 'Acuatica';  -- nombre libre, está en otro parque
-EXEC actividades.ActualizarAtraccion @id_sendero, '', -100, -5, 0, '';                    -- multiples errores
-
--- modificarse a si mismo
-EXEC actividades.ActualizarAtraccion @id_sendero, 'TEST_Sendero', 1800, 80, 25, 'Senderismo';
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 
 -- SCRIPTS TESTING - BAJA
 
 -- baja ok
-<<<<<<< HEAD
 EXEC actividades.usp_EliminarAtraccion 1;
 
 -- casos negativos
 EXEC actividades.usp_EliminarAtraccion 99999;     -- no existe
 EXEC actividades.usp_EliminarAtraccion 1;  -- ya está dada de baja
-=======
+
 EXEC actividades.EliminarAtraccion 12;
 
 -- casos negativos
 EXEC actividades.EliminarAtraccion 99999;     -- no existe
 EXEC actividades.EliminarAtraccion 12;  -- ya está dada de baja
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
+
 
 -- ver como quedó la tabla
 
@@ -629,7 +497,6 @@ EXEC actividades.usp_InsertarTourGuia
     @id_guia      = @id_guia;
 GO
 
-<<<<<<< HEAD
 -- test 2 positivo: asignar segundo guía a la misma atracción
 DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
 DECLARE @id_guia INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '22222222');
@@ -645,17 +512,6 @@ EXEC actividades.usp_InsertarTourGuia
     @id_atraccion = @id_tour,
     @id_guia      = @id_guia;
 GO
-=======
--- casos válidos
-EXEC actividades.InsertarTourGuia @id_tour, @id_guia1;
-EXEC actividades.InsertarTourGuia @id_tour, @id_guia2;
-
--- casos negativos
-EXEC actividades.InsertarTourGuia @id_tour, @id_guia1;    -- duplicado
-EXEC actividades.InsertarTourGuia @id_tour, 99999;        -- guía inexistente
-EXEC actividades.InsertarTourGuia 99999, @id_guia1;       -- atracción inexistente
-EXEC actividades.InsertarTourGuia NULL, NULL;              -- ambos null
->>>>>>> 6ee2f8b75d6a0cb3ccdd2c23d67fd3fd10749641
 
 -- test 4 negativo: guía inexistente
 DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
