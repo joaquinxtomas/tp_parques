@@ -1,11 +1,8 @@
 --  21/06/2026
 --  INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
---  Descripcion: Script de modificacion para aplicar cifrado a datos sensibles.
---               Columnas afectadas: personal.GuiaAutorizado.dni, personal.Guardaparque.dni
---               El DNI es un dato personal sensible. El CUIT de empresa es informacion publica
---               y no requiere cifrado.
+--  Descripcion: Script de modificacion para aplicar cifrado a datos sensibles. Afecta a personal.GuiaAutorizado.dni, personal.Guardaparque.dni
 --
---      NOTA: Este script funcionaba con la estructura vieja, pero se cambiaron los campos de las tablas y se cifran desde el inicio, por lo que no es necesario ejecutar este script. Dejo el ejemplo de referencia.
+--    NOTA: Este script funcionaba con la estructura vieja, pero se cambiaron los campos de las tablas y se cifran desde el inicio, por lo que no es necesario ejecutar este script. Dejo el ejemplo de referencia.
 --
 --    1. Recibir @claveCifrado NVARCHAR(128) como parametro.
 --    2. En altas: cifrar @dni con EncryptByPassPhrase y calcular HASHBYTES para dni_hash.
@@ -155,7 +152,7 @@ GO
 --
 -- ALTA (GuiaAutorizado_Nuevo / Guardaparque_Nuevo):
 --
---   DECLARE @claveCifrado NVARCHAR(128) = @claveCifrado_param;
+--   DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
 --
 --   -- Validar formato antes de cifrar (el CHECK fue eliminado de la tabla)
 --   IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
@@ -171,7 +168,7 @@ GO
 --
 -- CONSULTA con dni descifrado:
 --
---   DECLARE @claveCifrado NVARCHAR(128) = @claveCifrado_param;
+--   DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
 --   SELECT
 --       id_guia,
 --       nombre,
