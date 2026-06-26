@@ -6,7 +6,7 @@ GO
 -- 1. ejecución básica
 EXEC importacion.ImportarParquesKML
      @ruta_archivo = 'C:\datasets finales\parques.kml';
-go;
+go
 
 -- 2. Verificar resultado
 SELECT * FROM parques.Parque;
