@@ -177,7 +177,6 @@ BEGIN
             AND e.origen = 'IMPORTADO'
       );
 
-
     -- GENERAR GRUPOS
     CREATE TABLE #nums (n INT PRIMARY KEY);
     INSERT INTO #nums (n)
