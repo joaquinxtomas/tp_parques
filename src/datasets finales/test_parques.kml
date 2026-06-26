@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <Placemark>
+    <ExtendedData><SchemaData>
+      <SimpleData name="nombre">Parque Test Válido</SimpleData>
+      <SimpleData name="cat_gral">PARQUE NACIONAL</SimpleData>
+      <SimpleData name="sup_total">5000</SimpleData>
+      <SimpleData name="latitud">25° 30' 0,00" S</SimpleData>
+      <SimpleData name="longitud">55° 30' 0,00" W</SimpleData>
+      <SimpleData name="provincia">MISIONES</SimpleData>
+    </SchemaData></ExtendedData>
+  </Placemark>
+  <Placemark>
+    <ExtendedData><SchemaData>
+      <SimpleData name="nombre"></SimpleData>
+      <SimpleData name="cat_gral">PARQUE NACIONAL</SimpleData>
+      <SimpleData name="latitud">25° 30' 0,00" S</SimpleData>
+      <SimpleData name="longitud">55° 30' 0,00" W</SimpleData>
+    </SchemaData></ExtendedData>
+  </Placemark>
+  <Placemark>
+    <ExtendedData><SchemaData>
+      <SimpleData name="nombre">Parque Test Sin Coords</SimpleData>
+      <SimpleData name="cat_gral">PARQUE NACIONAL</SimpleData>
+    </SchemaData></ExtendedData>
+  </Placemark>
+  <Placemark>
+    <ExtendedData><SchemaData>
+      <SimpleData name="nombre">Parque Test DMS Roto</SimpleData>
+      <SimpleData name="cat_gral">PARQUE NACIONAL</SimpleData>
+      <SimpleData name="latitud">texto sin formato</SimpleData>
+      <SimpleData name="longitud">55° 30' 0,00" W</SimpleData>
+    </SchemaData></ExtendedData>
+  </Placemark>
+</Document>
+</kml>
