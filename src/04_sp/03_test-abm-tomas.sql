@@ -1,339 +1,4 @@
---	18/06/2026
---  INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
---  Descripcion: Creacion de los STORED PROCEDURES de las operaciones ABM en tipos de concesiones
-
-USE ParquesNacionales;
-GO
-
---               ABM DE CONCESIONES
-
--- Empresa
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Nueva
-    @razon_social VARCHAR(255),
-    @cuit VARCHAR(20),
-    @contacto VARCHAR(100)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF @razon_social IS NULL OR LTRIM(RTRIM(@razon_social)) = ''
-        SET @v_errores = @v_errores + 'La razón social es obligatoria. ';
-
-    IF @cuit IS NULL OR LTRIM(RTRIM(@cuit)) = ''
-        SET @v_errores = @v_errores + 'El CUIT es obligatorio. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
-        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
-
-    IF @contacto IS NULL OR LTRIM(RTRIM(@contacto)) = ''
-        SET @v_errores = @v_errores + 'El contacto es obligatorio. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO concesiones.Empresa (razon_social, cuit, contacto)
-    VALUES (@razon_social, @cuit, @contacto);
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Modificar
-    @id_empresa INT,
-    @razon_social VARCHAR(255) = NULL,
-    @cuit VARCHAR(20) = NULL,
-    @contacto VARCHAR(100) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
-        SET @v_errores = @v_errores + 'La empresa no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
-        SET @v_errores = @v_errores + 'La razón social ya existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
-        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    IF @razon_social IS NOT NULL        
-        UPDATE concesiones.Empresa
-        SET razon_social = @razon_social
-        WHERE id_empresa = @id_empresa;
-
-    IF @cuit IS NOT NULL
-        UPDATE concesiones.Empresa
-        SET cuit = @cuit
-        WHERE id_empresa = @id_empresa;
-
-    IF @contacto IS NOT NULL
-        UPDATE concesiones.Empresa
-        SET contacto = @contacto
-        WHERE id_empresa = @id_empresa;
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Eliminar
-    @id_empresa INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
-        SET @v_errores = @v_errores + 'La empresa no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa where id_empresa = @id_empresa AND estado = 1)
-        SET @v_errores = @v_errores + 'La empresa ya está deshabilitada. ';
-    
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE concesiones.Empresa SET estado = 1 WHERE id_empresa = @id_empresa;
-
-END
-GO
-
--- Concesion
-
-CREATE OR ALTER PROCEDURE concesiones.Concesion_Nueva
-    @id_empresa INT,
-    @id_parque INT,
-    @tipo_actividad VARCHAR(100),
-    @fecha_inicio DATE,
-    @valor_alquiler DECIMAL(18, 2),
-    @fecha_fin DATE = NULL
-    
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa AND estado = 0)
-        SET @v_errores = @v_errores + 'La empresa no existe o está inactiva. ';
-    
-    IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE id_parque = @id_parque)
-        SET @v_errores = @v_errores + 'El parque no existe. ';
-
-    IF @tipo_actividad IS NULL OR LTRIM(RTRIM(@tipo_actividad)) = ''
-        SET @v_errores = @v_errores + 'El tipo de actividad es obligatorio. ';
-
-    IF @fecha_inicio IS NULL
-        SET @v_errores = @v_errores + 'La fecha de inicio es obligatoria. ';
-
-    IF @fecha_fin IS NOT NULL AND @fecha_fin < @fecha_inicio
-        SET @v_errores = @v_errores + 'La fecha de fin no puede ser anterior a la fecha de inicio. ';
-
-    IF @valor_alquiler IS NULL OR @valor_alquiler <= 0
-        SET @v_errores = @v_errores + 'El valor del alquiler es obligatorio y debe ser positivo. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO concesiones.Concesion (id_empresa, id_parque, tipo_actividad, fecha_inicio, fecha_fin, valor_alquiler)
-    VALUES (@id_empresa, @id_parque, @tipo_actividad, @fecha_inicio, @fecha_fin, @valor_alquiler);
-
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Concesion_Modificar
-    @id_concesion INT,
-    @tipo_actividad VARCHAR(100) = NULL,
-    @fecha_inicio DATE = NULL,
-    @fecha_fin DATE = NULL,
-    @valor_alquiler DECIMAL(18, 2) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion)
-        SET @v_errores = @v_errores + 'La concesión no existe. ';
-
-    IF @fecha_inicio IS NOT NULL AND @fecha_fin IS NOT NULL AND @fecha_fin < @fecha_inicio
-        SET @v_errores = @v_errores + 'La fecha de fin no puede ser anterior a la fecha de inicio. ';
-
-    IF @valor_alquiler IS NOT NULL AND @valor_alquiler <= 0
-        SET @v_errores = @v_errores + 'El valor del alquiler debe ser positivo. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    IF @tipo_actividad IS NOT NULL
-        UPDATE concesiones.Concesion
-        SET tipo_actividad = @tipo_actividad
-        WHERE id_concesion = @id_concesion;
-
-    IF @fecha_inicio IS NOT NULL
-        UPDATE concesiones.Concesion
-        SET fecha_inicio = @fecha_inicio
-        WHERE id_concesion = @id_concesion;
-
-    IF @fecha_fin IS NOT NULL
-        UPDATE concesiones.Concesion
-        SET fecha_fin = @fecha_fin
-        WHERE id_concesion = @id_concesion;
-    
-    IF @valor_alquiler IS NOT NULL
-        UPDATE concesiones.Concesion
-        SET valor_alquiler = @valor_alquiler
-        WHERE id_concesion = @id_concesion;
-
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Concesion_Eliminar
-    @id_concesion INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion)
-        SET @v_errores = @v_errores + 'La concesión no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Concesion where id_concesion = @id_concesion AND estado = 1)
-        SET @v_errores = @v_errores + 'La concesión ya está deshabilitada. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE concesiones.Concesion SET estado = 1 WHERE id_concesion = @id_concesion;
-END
-GO
-
--- PagoConcesion
-
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Nuevo
-    @id_concesion INT,
-    @fecha_pago DATE,
-    @periodo DATE,
-    @monto DECIMAL(18, 2)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    
-    SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion AND estado = 0)
-        SET @v_errores = @v_errores + 'La concesión no existe o está inactiva. ';
-
-    IF @fecha_pago IS NULL
-        SET @v_errores = @v_errores + 'La fecha de pago es obligatoria. ';
-
-    IF @periodo IS NULL
-        SET @v_errores = @v_errores + 'El período es obligatorio. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_concesion = @id_concesion AND periodo = @periodo)
-        SET @v_errores = @v_errores + 'Ya existe un pago para este período. ';
-
-    -- Cambiar por mayor o igual a 0 si se permiten pagos de $0
-    IF @monto IS NULL OR @monto <= 0
-        SET @v_errores = @v_errores + 'El monto es obligatorio y debe ser positivo. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO concesiones.PagoConcesion (id_concesion, fecha_pago, periodo, monto)
-    VALUES (@id_concesion, @fecha_pago, @periodo, @monto);
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Modificar
-    @id_pago INT,
-    @fecha_pago DATE = NULL,
-    @periodo DATE = NULL,
-    @monto DECIMAL(18, 2) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
-        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
-
-    IF @monto IS NOT NULL AND @monto <= 0
-        SET @v_errores = @v_errores + 'El monto debe ser positivo. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    IF @fecha_pago IS NOT NULL
-        UPDATE concesiones.PagoConcesion
-        SET fecha_pago = @fecha_pago
-        WHERE id_pago = @id_pago;
-
-    IF @periodo IS NOT NULL
-    BEGIN
-        SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
-        UPDATE concesiones.PagoConcesion
-        SET periodo = @periodo
-        WHERE id_pago = @id_pago;
-    END
-
-    IF @monto IS NOT NULL
-        UPDATE concesiones.PagoConcesion
-        SET monto = @monto  
-        WHERE id_pago = @id_pago;
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Eliminar
-    @id_pago INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
-        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion where id_pago = @id_pago AND estado = 1)
-        SET @v_errores = @v_errores + 'El pago de concesión ya está deshabilitado. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE concesiones.PagoConcesion SET estado = 1 WHERE id_pago = @id_pago;
-END
-GO
-
-
--- ============================================================
--- PRUEBAS
--- ============================================================
+-- Concesiones
 
 USE ParquesNacionales;
 GO
@@ -359,9 +24,7 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Nahuel Huapi')
 GO
 
 
--- ============================================================
 -- Empresa_Nueva
--- ============================================================
 
 -- CASO 1: razon_social vacía → error
 BEGIN TRY
@@ -433,9 +96,7 @@ SELECT id_empresa, razon_social, cuit, estado FROM concesiones.Empresa;
 GO
 
 
--- ============================================================
 -- Empresa_Modificar
--- ============================================================
 
 -- CASO 6: empresa inexistente → error
 BEGIN TRY
@@ -624,9 +285,7 @@ END CATCH
 GO
 
 
--- ============================================================
 -- Concesion_Modificar
--- ============================================================
 
 -- CASO 20: concesion inexistente → error
 BEGIN TRY
@@ -672,9 +331,7 @@ END CATCH
 GO
 
 
--- ============================================================
 -- Concesion_Eliminar
--- ============================================================
 
 -- CASO 24: concesion inexistente → error
 BEGIN TRY
@@ -709,9 +366,7 @@ END CATCH
 GO
 
 
--- ============================================================
 -- PagoConcesion_Nuevo
--- ============================================================
 
 -- CASO 27: concesion inactiva → error
 BEGIN TRY
@@ -770,9 +425,7 @@ END CATCH
 GO
 
 
--- ============================================================
 -- PagoConcesion_Modificar
--- ============================================================
 
 -- CASO 32: pago inexistente → error
 BEGIN TRY
@@ -807,9 +460,7 @@ END CATCH
 GO
 
 
--- ============================================================
 -- PagoConcesion_Eliminar
--- ============================================================
 
 -- CASO 35: pago inexistente → error
 BEGIN TRY
@@ -844,48 +495,402 @@ END CATCH
 GO
 
 
--- ============================================================
--- LOTE: 10 pagos válidos de concesion
--- Concesion A (Restaurante): feb-jun 2026  |  Concesion B (Tienda de souvenirs): ene-may 2026
--- ============================================================
+-- Ventas
 
-DECLARE @id_p     INT = (SELECT id_parque  FROM parques.Parque           WHERE nombre = 'Nahuel Huapi');
-DECLARE @id_emp_b INT = (SELECT id_empresa FROM concesiones.Empresa       WHERE cuit   = '30714591241');
-DECLARE @id_c1    INT = (SELECT MIN(id_concesion) FROM concesiones.Concesion WHERE estado = 0);
-DECLARE @id_c2    INT;
+-- PRECONDICIONES
 
-IF NOT EXISTS (
-    SELECT 1 FROM concesiones.Concesion
-    WHERE id_empresa = @id_emp_b AND tipo_actividad = 'Tienda de souvenirs' AND estado = 0
-)
-    EXEC concesiones.Concesion_Nueva
-        @id_empresa = @id_emp_b, @id_parque = @id_p,
-        @tipo_actividad = 'Tienda de souvenirs', @fecha_inicio = '2026-01-01', @valor_alquiler = 35000.00;
-
-SET @id_c2 = (
-    SELECT id_concesion FROM concesiones.Concesion
-    WHERE id_empresa = @id_emp_b AND tipo_actividad = 'Tienda de souvenirs' AND estado = 0
-);
-
--- 5 pagos Restaurante (feb-jun 2026; enero ya ocupado por CASO 30/36)
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c1, @fecha_pago='2026-03-05', @periodo='2026-02-01', @monto=90000.00; PRINT 'Lote  1 OK'; END TRY BEGIN CATCH PRINT 'Lote  1 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c1, @fecha_pago='2026-04-05', @periodo='2026-03-01', @monto=90000.00; PRINT 'Lote  2 OK'; END TRY BEGIN CATCH PRINT 'Lote  2 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c1, @fecha_pago='2026-05-05', @periodo='2026-04-01', @monto=90000.00; PRINT 'Lote  3 OK'; END TRY BEGIN CATCH PRINT 'Lote  3 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c1, @fecha_pago='2026-06-05', @periodo='2026-05-01', @monto=90000.00; PRINT 'Lote  4 OK'; END TRY BEGIN CATCH PRINT 'Lote  4 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c1, @fecha_pago='2026-07-05', @periodo='2026-06-01', @monto=90000.00; PRINT 'Lote  5 OK'; END TRY BEGIN CATCH PRINT 'Lote  5 ERROR: '+ERROR_MESSAGE(); END CATCH
--- 5 pagos Tienda de souvenirs (ene-may 2026)
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c2, @fecha_pago='2026-02-05', @periodo='2026-01-01', @monto=35000.00; PRINT 'Lote  6 OK'; END TRY BEGIN CATCH PRINT 'Lote  6 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c2, @fecha_pago='2026-03-05', @periodo='2026-02-01', @monto=35000.00; PRINT 'Lote  7 OK'; END TRY BEGIN CATCH PRINT 'Lote  7 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c2, @fecha_pago='2026-04-05', @periodo='2026-03-01', @monto=35000.00; PRINT 'Lote  8 OK'; END TRY BEGIN CATCH PRINT 'Lote  8 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c2, @fecha_pago='2026-05-05', @periodo='2026-04-01', @monto=35000.00; PRINT 'Lote  9 OK'; END TRY BEGIN CATCH PRINT 'Lote  9 ERROR: '+ERROR_MESSAGE(); END CATCH
-BEGIN TRY EXEC concesiones.PagoConcesion_Nuevo @id_concesion=@id_c2, @fecha_pago='2026-06-05', @periodo='2026-05-01', @monto=35000.00; PRINT 'Lote 10 OK'; END TRY BEGIN CATCH PRINT 'Lote 10 ERROR: '+ERROR_MESSAGE(); END CATCH
+BEGIN TRY
+    EXEC parques.InsertarTipoDeParque @descripcion = 'Nacional';
+END TRY
+BEGIN CATCH
+    PRINT 'Precondicion tipo parque: ' + ERROR_MESSAGE();
+END CATCH
 GO
 
-SELECT pc.id_pago, c.tipo_actividad, e.razon_social,
-       pc.periodo, pc.fecha_pago, pc.monto, pc.estado
-FROM   concesiones.PagoConcesion pc
-JOIN   concesiones.Concesion     c  ON c.id_concesion = pc.id_concesion
-JOIN   concesiones.Empresa       e  ON e.id_empresa   = c.id_empresa
-WHERE  pc.estado = 0
-ORDER BY pc.id_concesion, pc.periodo;
+DECLARE @id_tipo INT = (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion = 'Nacional');
+IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Nahuel Huapi')
+    EXEC parques.InsertarParque
+        @nombre         = 'Nahuel Huapi',
+        @id_tipo_parque = @id_tipo,
+        @provincia      = 'Neuquén',
+        @region         = 'Patagonia',
+        @superficie     = 717261.00;
+GO
+
+
+-- TipoVisitante_Nuevo
+
+-- CASO 1: descripcion NULL → error
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = NULL;
+    PRINT 'CASO 1 FALLO: no debería insertar';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 2: descripcion vacía → error
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = '   ';
+    PRINT 'CASO 2 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 3: altas correctas (3 tipos)
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Residente';
+    PRINT 'CASO 3a OK';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3a: ' + ERROR_MESSAGE();
+END CATCH
+GO
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Extranjero';
+    PRINT 'CASO 3b OK';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3b: ' + ERROR_MESSAGE();
+END CATCH
+GO
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Jubilado';
+    PRINT 'CASO 3c OK';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3c: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 4: descripcion duplicada → error
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Residente';
+    PRINT 'CASO 4 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 4 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+SELECT id_tipo_visitante, descripcion, estado FROM ventas.TipoVisitante;
+GO
+
+
+-- TipoVisitante_Modificar
+
+-- CASO 5: ID inexistente → error
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Modificar @id_tipo_visitante = 9999, @descripcion = 'X';
+    PRINT 'CASO 5 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 5 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 6: descripcion vacía → error
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.TipoVisitante_Modificar @id_tipo_visitante = @id, @descripcion = '';
+    PRINT 'CASO 6 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 6 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 7: descripcion ya usada por otro tipo → error
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.TipoVisitante_Modificar @id_tipo_visitante = @id, @descripcion = 'Extranjero';
+    PRINT 'CASO 7 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 7 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 8: modificación correcta
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado');
+    EXEC ventas.TipoVisitante_Modificar @id_tipo_visitante = @id, @descripcion = 'Jubilado / Pensionado';
+    PRINT 'CASO 8 OK: descripcion actualizada';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 8 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+
+-- TipoVisitante_Eliminar
+
+-- CASO 9: ID inexistente → error
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Eliminar @id_tipo_visitante = 9999;
+    PRINT 'CASO 9 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 9 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 10: baja correcta ('Jubilado / Pensionado', sin precios asociados)
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado / Pensionado');
+    EXEC ventas.TipoVisitante_Eliminar @id_tipo_visitante = @id;
+    PRINT 'CASO 10 OK: tipo dado de baja';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 10 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 11: ya dado de baja → error
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado / Pensionado');
+    EXEC ventas.TipoVisitante_Eliminar @id_tipo_visitante = @id;
+    PRINT 'CASO 11 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 11 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 12: modificar tipo dado de baja → error
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado / Pensionado');
+    EXEC ventas.TipoVisitante_Modificar @id_tipo_visitante = @id, @descripcion = 'Jubilado';
+    PRINT 'CASO 12 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 12 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+
+-- PrecioEntrada_Nuevo_Normal
+
+-- CASO 13: parque inexistente → error
+BEGIN TRY
+    DECLARE @id_res INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = 9999, @id_tipo_visitante = @id_res, @precio = 1500.00, @fecha_inicio = '2026-01-01';
+    PRINT 'CASO 13 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 13 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 14: tipo visitante inexistente → error
+BEGIN TRY
+    DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Nahuel Huapi');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = @id_p, @id_tipo_visitante = 9999, @precio = 1500.00, @fecha_inicio = '2026-01-01';
+    PRINT 'CASO 14 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 14 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 15: precio negativo → error
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = @id_p, @id_tipo_visitante = @id_res, @precio = -100.00, @fecha_inicio = '2026-01-01';
+    PRINT 'CASO 15 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 15 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 16: altas correctas Residente y Extranjero (precios vigentes desde 2026-01-01)
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = @id_p, @id_tipo_visitante = @id_res, @precio = 1500.00, @fecha_inicio = '2026-01-01';
+    PRINT 'CASO 16a OK: precio Residente $1500 desde 2026-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 16a ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_ext INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Extranjero');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = @id_p, @id_tipo_visitante = @id_ext, @precio = 5000.00, @fecha_inicio = '2026-01-01';
+    PRINT 'CASO 16b OK: precio Extranjero $5000 desde 2026-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 16b ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 17: precio activo ya existe para ese parque + tipo → error
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque = @id_p, @id_tipo_visitante = @id_res, @precio = 2000.00, @fecha_inicio = '2026-06-01';
+    PRINT 'CASO 17 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 17 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+
+-- PrecioEntrada_Nuevo_Temporada
+
+-- CASO 18: fecha_fin < fecha_inicio → error
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Temporada @id_parque = @id_p, @id_tipo_visitante = @id_res,
+        @precio = 2000.00, @fecha_inicio = '2026-08-01', @fecha_fin = '2026-07-31';
+    PRINT 'CASO 18 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 18 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 19: fecha_inicio = fecha_fin → error (requiere estrictamente menor)
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.PrecioEntrada_Nuevo_Temporada @id_parque = @id_p, @id_tipo_visitante = @id_res,
+        @precio = 2000.00, @fecha_inicio = '2026-07-01', @fecha_fin = '2026-07-01';
+    PRINT 'CASO 19 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 19 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- Precondición: tipo 'Menor' sin precio activo (para tests de Entrada_Nuevo y temporada)
+BEGIN TRY
+    EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Menor';
+    PRINT 'Precondicion tipo Menor OK';
+END TRY
+BEGIN CATCH
+    PRINT 'Precondicion tipo Menor: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 20: alta de temporada correcta (Menor, invierno 2026)
+BEGIN TRY
+    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
+    DECLARE @id_men INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Menor');
+    EXEC ventas.PrecioEntrada_Nuevo_Temporada @id_parque = @id_p, @id_tipo_visitante = @id_men,
+        @precio = 750.00, @fecha_inicio = '2026-07-01', @fecha_fin = '2026-08-31';
+    PRINT 'CASO 20 OK: precio de temporada Menor $750 (jul-ago 2026)';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 20 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+
+-- PrecioEntrada_Modificar_Precio
+
+-- CASO 21: id_precio inexistente → error
+BEGIN TRY
+    EXEC ventas.PrecioEntrada_Modificar_Precio @id_precio = 9999, @precio = 2000.00;
+    PRINT 'CASO 21 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 21 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 22: precio negativo → error
+BEGIN TRY
+    DECLARE @id_prec INT = (
+        SELECT pe.id_precio FROM ventas.PrecioEntrada pe
+        JOIN ventas.TipoVisitante tv ON tv.id_tipo_visitante = pe.id_tipo_visitante
+        WHERE tv.descripcion = 'Residente' AND pe.estado = 0
+    );
+    EXEC ventas.PrecioEntrada_Modificar_Precio @id_precio = @id_prec, @precio = -1.00;
+    PRINT 'CASO 22 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 22 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 23: modificación correcta
+BEGIN TRY
+    DECLARE @id_prec INT = (
+        SELECT pe.id_precio FROM ventas.PrecioEntrada pe
+        JOIN ventas.TipoVisitante tv ON tv.id_tipo_visitante = pe.id_tipo_visitante
+        WHERE tv.descripcion = 'Residente' AND pe.estado = 0
+    );
+    EXEC ventas.PrecioEntrada_Modificar_Precio @id_precio = @id_prec, @precio = 1800.00;
+    PRINT 'CASO 23 OK: precio Residente actualizado a $1800';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 23 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+
+-- PrecioEntrada_Eliminar
+
+-- CASO 24: id_precio inexistente → error
+BEGIN TRY
+    EXEC ventas.PrecioEntrada_Eliminar @id_precio = 9999;
+    PRINT 'CASO 24 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 24 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 25: baja correcta (precio de temporada Menor)
+BEGIN TRY
+    DECLARE @id_prec INT = (
+        SELECT pe.id_precio FROM ventas.PrecioEntrada pe
+        JOIN ventas.TipoVisitante tv ON tv.id_tipo_visitante = pe.id_tipo_visitante
+        WHERE tv.descripcion = 'Menor' AND pe.estado = 0
+    );
+    EXEC ventas.PrecioEntrada_Eliminar @id_precio = @id_prec;
+    PRINT 'CASO 25 OK: precio Menor dado de baja';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 25 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 26: ya dado de baja → error
+BEGIN TRY
+    DECLARE @id_prec INT = (
+        SELECT pe.id_precio FROM ventas.PrecioEntrada pe
+        JOIN ventas.TipoVisitante tv ON tv.id_tipo_visitante = pe.id_tipo_visitante
+        WHERE tv.descripcion = 'Menor' AND pe.estado = 1
+    );
+    EXEC ventas.PrecioEntrada_Eliminar @id_precio = @id_prec;
+    PRINT 'CASO 26 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 26 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 27: eliminar tipo visitante con precios activos → error
+BEGIN TRY
+    DECLARE @id INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
+    EXEC ventas.TipoVisitante_Eliminar @id_tipo_visitante = @id;
+    PRINT 'CASO 27 FALLO';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 27 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+SELECT id_precio, id_parque, id_tipo_visitante, precio, fecha_inicio, fecha_fin, estado
+FROM ventas.PrecioEntrada ORDER BY id_precio;
 GO
