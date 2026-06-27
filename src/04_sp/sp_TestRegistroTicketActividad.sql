@@ -8,8 +8,6 @@ GO
 EXEC parques.InsertarTipoDeParque @descripcion = 'Tipo Test Tickets'; -- creo un tipo de parque de prueba
 GO
 
-select * from parques.TipoParque
-
 DECLARE @id_tipo INT = (SELECT id_tipo_parque FROM parques.TipoParque
                         WHERE descripcion = 'Tipo Test Tickets');
 

@@ -7,7 +7,7 @@ GO
 
 CREATE OR ALTER PROCEDURE actividades.RegistrarTicketActividad
 	@id_atraccion INT,
-	@cantidad INT ,
+	@cantidad INT
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -26,7 +26,7 @@ BEGIN TRANSACTION
 BEGIN TRY
 	-- (a) cantidad positiva
     IF @cantidad IS NULL OR @cantidad <= 0
-		SET @v_errores += '- La cantidad debe ser mayor a cero.';
+		SET @v_errores += 'La cantidad debe ser mayor a cero.';
 
 	SELECT @v_costo  = costo,
            @v_cupo   = cupo_maximo,
@@ -48,9 +48,9 @@ BEGIN TRY
 		AND  fecha >= CAST(@v_fecha AS DATE) -- casteo la fecha solo como dia -- ej: 21/6/26 00:00 hs
 		AND  fecha <  DATEADD(DAY, 1, CAST(@v_fecha AS DATE))  -- casteo tmb como dia y le sumo 1 dia-- 22/6/26 00:00
 		AND  estado = 0;  
-		IF @v_usado + @cantidad > @v_cupo
+		IF @v_ocupado + @cantidad > @v_cupo
                 SET @v_errores += 'Cupo insuficiente para la jornada. Disponible: '
-                    + CAST(@v_cupo - @v_usado AS VARCHAR(10))
+                    + CAST(@v_cupo - @v_ocupado AS VARCHAR(10))
                     + ', solicitado: ' + CAST(@cantidad AS VARCHAR(10)) + '. ';
    END
    IF @v_errores <> '' -- si hubo errores, cierro la transaccion antes de salir
@@ -77,3 +77,27 @@ BEGIN CATCH
     RETURN;
 END CATCH;
 END
+GO
+
+CREATE OR ALTER PROCEDURE actividades.CancelarTicketActividad
+	@id_ticketAtraccion INT
+AS
+BEGIN
+	SET NOCOUNT ON
+	DECLARE @v_errores VARCHAR(MAX) = '';
+
+	IF NOT EXISTS(SELECT 1 FROM actividades.TicketsAtraccion WHERE  id_ticket_atraccion = @id_ticketAtraccion )
+	SET @v_errores += 'No existe un ticket con ese ID'
+
+	IF EXISTS (SELECT 1 FROM actividades.TicketsAtraccion where  id_ticket_atraccion = @id_ticketAtraccion AND estado = 1)
+	SET @v_errores += 'El registro ya esta dado de baja'
+
+	IF @v_errores <> ''
+	BEGIN 
+		RAISERROR (@v_errores,16,1);
+		RETURN;
+	END
+
+	UPDATE actividades.TicketsAtraccion SET estado = 1 WHERE id_ticket_atraccion = @id_ticketAtraccion;
+END
+GO
