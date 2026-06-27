@@ -39,7 +39,7 @@ GO
 
 
 -- ROL: rol_operaciones
--- Puede ejecutar todos los SPs de ABM de los modulos operativos. No tiene acceso directo a tablas (las operaciones pasan por los SPs).
+-- Puede ejecutar todos los SPs de ABM de los modulos operativos y leer las tablas para listar datos en la aplicacion.
 
 GRANT EXECUTE ON SCHEMA::parques      TO rol_operaciones;
 GRANT EXECUTE ON SCHEMA::ventas       TO rol_operaciones;
@@ -48,11 +48,19 @@ GRANT EXECUTE ON SCHEMA::concesiones  TO rol_operaciones;
 GRANT EXECUTE ON SCHEMA::actividades  TO rol_operaciones;
 GO
 
+GRANT SELECT ON SCHEMA::parques      TO rol_operaciones;
+GRANT SELECT ON SCHEMA::ventas       TO rol_operaciones;
+GRANT SELECT ON SCHEMA::personal     TO rol_operaciones;
+GRANT SELECT ON SCHEMA::concesiones  TO rol_operaciones;
+GRANT SELECT ON SCHEMA::actividades  TO rol_operaciones;
+GO
+
 
 -- ROL: rol_importacion
--- Puede ejecutar los SPs del modulo de importacion de datos externos. No tiene acceso a los modulos operativos ni a tablas directamente.
+-- Puede ejecutar los SPs del modulo de importacion y ver el log de sus propias importaciones.
 
 GRANT EXECUTE ON SCHEMA::importacion TO rol_importacion;
+GRANT SELECT  ON SCHEMA::importacion TO rol_importacion;
 GO
 
 
