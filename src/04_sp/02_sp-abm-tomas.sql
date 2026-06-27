@@ -19,8 +19,9 @@ BEGIN
 
     IF @cuit IS NULL OR LTRIM(RTRIM(@cuit)) = ''
         SET @v_errores = @v_errores + 'El CUIT es obligatorio. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
+    ELSE IF LEN(LTRIM(RTRIM(@cuit))) > 11
+        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
+    ELSE IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
         SET @v_errores = @v_errores + 'El CUIT ya existe. ';
 
     IF @contacto IS NULL OR LTRIM(RTRIM(@contacto)) = ''
@@ -53,7 +54,9 @@ BEGIN
     IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
         SET @v_errores = @v_errores + 'La razón social ya existe. ';
 
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
+    IF @cuit IS NOT NULL AND LEN(LTRIM(RTRIM(@cuit))) > 11
+        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
+    ELSE IF @cuit IS NOT NULL AND EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
         SET @v_errores = @v_errores + 'El CUIT ya existe. ';
 
     IF @v_errores <> ''
@@ -62,7 +65,7 @@ BEGIN
         RETURN;
     END
 
-    IF @razon_social IS NOT NULL        
+    IF @razon_social IS NOT NULL
         UPDATE concesiones.Empresa
         SET razon_social = @razon_social
         WHERE id_empresa = @id_empresa;
