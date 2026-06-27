@@ -1,6 +1,5 @@
 USE ParquesNacionales;
 GO
--- testeando funcionamiento de la importacion desde kml
 
 CREATE OR ALTER PROCEDURE importacion.ImportarParquesKML
 	@ruta_archivo VARCHAR(500)
@@ -16,15 +15,16 @@ BEGIN
 	DECLARE @actualizados INT = 0;
 	DECLARE @errores INT = 0;
 	DECLARE @detalle VARCHAR(500) = '';
+	DECLARE @tipo_archivo VARCHAR(50) = 'SIB_KML';
 
 	-- insertar el inicio del proceso en el log
 	INSERT INTO importacion.LogImportacion(tipo_archivo, nombre_archivo, detalle)
-	VALUES ('SIB_KML', @ruta_archivo, 'En proceso');
+	VALUES (@tipo_archivo, @ruta_archivo, 'En proceso');
 
 	SET @id_log = SCOPE_IDENTITY(); 
 
 	-- leer KML (se lee como XML)
-	-- único uso de sql dinamico (aclarado válido en consigna)
+	-- único uso de sql dinamico 
 	BEGIN TRY
 		DECLARE @sql NVARCHAR (MAX) = N'
 			SELECT @xml_output = CAST(BulkColumn AS XML)
@@ -42,8 +42,21 @@ BEGIN
 		RETURN;
 	END CATCH;
 
+	--crear tabla staging temporal
+	CREATE TABLE #staging (
+		id_log INT NOT NULL,
+		nombre VARCHAR(200),
+		cat_gral VARCHAR(100),
+		sup_total VARCHAR(50),
+		lat_dms VARCHAR(50),
+		lon_dms VARCHAR(50),
+		ecorregion VARCHAR(200),
+		provincia VARCHAR(100),
+		region_dnc VARCHAR(100)
+	)
+
 	;WITH XMLNAMESPACES (DEFAULT 'http://www.opengis.net/kml/2.2')
-	INSERT INTO importacion.StagingKML (id_log, nombre, cat_gral, sup_total, lat_dms, lon_dms ,ecorregion, provincia, region_dnc)
+	INSERT INTO #staging (id_log, nombre, cat_gral, sup_total, lat_dms, lon_dms ,ecorregion, provincia, region_dnc)
 	SELECT
 		@id_log,
 		NULLIF(TRIM(p.value('(ExtendedData/SchemaData/SimpleData[@name="nombre"])[1]','VARCHAR(200)')),''),
@@ -59,14 +72,14 @@ BEGIN
 	SET @leidos = @@ROWCOUNT;
 
 	--NORMALIZO CARACTERES TIPOGRAFICOS
-	UPDATE importacion.StagingKML
+	UPDATE #staging
 	SET lat_dms = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(lat_dms,
-					NCHAR(186),  '°'),         -- º → °  (ordinal masculino)
-					'''''',      '"'),          -- '' → "  (doble apóstrofe → comilla doble)
-					NCHAR(8217), CHAR(39)),     -- ’ → '
-					NCHAR(8216), CHAR(39)),     -- ‘ → '
-					NCHAR(8221), '"'),          -- ” → "
-					NCHAR(8220), '"'),          -- “ → "
+					NCHAR(186),  '°'),         
+					'''''',      '"'),          
+					NCHAR(8217), CHAR(39)),     
+					NCHAR(8216), CHAR(39)),     
+					NCHAR(8221), '"'),          
+					NCHAR(8220), '"'),          
 		lon_dms = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(lon_dms,
 					NCHAR(186),  '°'),
 					'''''',      '"'),
@@ -78,24 +91,23 @@ BEGIN
 	
 	--inserts de errores
 	--sin nombre
-	INSERT INTO importacion.ErroresKML (id_log, nombre, cat_gral, lat_dms, lon_dms, motivo)
-	SELECT @id_log, nombre, cat_gral, lat_dms, lon_dms, 'Sin nombre'
-	FROM importacion.StagingKML
-	WHERE id_log = @id_log AND nombre IS NULL;
+	INSERT INTO importacion.ErroresImportacion(id_log, tipo_archivo, registro_origen, dato1, dato2, motivo)
+	SELECT @id_log, @tipo_archivo, nombre, lat_dms, lon_dms, 'Sin nombre'
+	FROM #staging
+	WHERE nombre IS NULL;
 
 	--sin coordenada dms
-	INSERT INTO importacion.ErroresKML (id_log, nombre, cat_gral, lat_dms, lon_dms, motivo)
-	SELECT @id_log, nombre, cat_gral, lat_dms, lon_dms, 'Sin coordenada DMS'
-	FROM importacion.StagingKML
-	WHERE id_log = @id_log AND nombre IS NOT NULL
+	INSERT INTO importacion.ErroresImportacion(id_log,tipo_archivo, registro_origen, dato1, dato2, motivo)
+	SELECT @id_log, @tipo_archivo, nombre, lat_dms, lon_dms, 'Sin coordenada DMS'
+	FROM #staging
+	WHERE nombre IS NOT NULL
 	AND (lat_dms IS NULL OR lon_dms IS NULL)
 
 	--formato dms invalido
-	INSERT INTO importacion.ErroresKML (id_log, nombre, cat_gral, lat_dms, lon_dms, motivo)
-	SELECT @id_log, nombre, cat_gral, lat_dms, lon_dms, 'Formato DMS invalido'
-	FROM importacion.StagingKML
-	WHERE id_log = @id_log
-	AND nombre IS NOT NULL
+	INSERT INTO importacion.ErroresImportacion (id_log,tipo_archivo,registro_origen, dato1, dato2, motivo)
+	SELECT @id_log,@tipo_archivo, nombre,lat_dms, lon_dms, 'Formato DMS invalido'
+	FROM #staging
+	WHERE nombre IS NOT NULL
 	AND lat_dms IS NOT NULL
 	AND lon_dms IS NOT NULL
 	AND(
@@ -107,12 +119,22 @@ BEGIN
          OR CHARINDEX('"', lon_dms) = 0
 	)
 
-	INSERT INTO importacion.ValidosKML (id_log,nombre, cat_gral, superficie, latitud, longitud, ecorregion, provincia, region)
+	--CREACION DE TABLA TEMPORAL PARA DATOS VALIDOS
+	CREATE TABLE #validos (
+		nombre VARCHAR(200),
+		cat_gral VARCHAR(100),
+		superficie DECIMAL(12,2),
+		latitud DECIMAL(9,6),
+		longitud DECIMAL(9,6),
+		provincia VARCHAR(100),
+		region VARCHAR(100)
+	)
+
+	INSERT INTO #validos (nombre, cat_gral, superficie, latitud, longitud, provincia, region)
 	SELECT
-		@id_log,
 		s.nombre,
 		s.cat_gral,
-		TRY_CAST(REPLACE(s.sup_total, ',','.') AS DECIMAL(12,2)),
+		TRY_CAST(TRY_CAST(s.sup_total AS FLOAT) AS DECIMAL(12,2)),
 		-- DMS es formato 24° 42' etc. Grados, minutos, segundos. Se castea a decimal (1 grado son 3600 segundos)
 		-- la cuenta concreta es: decimal = grados + (minutos/60) + (segundos/3600)
 		-- se usa LIKE %S% por que una coordenada en el archivo se ve asi: <SimpleData name="latitud">24° 42' 1,67" S</SimpleData>
@@ -176,12 +198,10 @@ BEGIN
 				CHARINDEX('"', s.lon_dms) - CHARINDEX(CHAR(39), s.lon_dms) - 1
 			)), ',','.') AS DECIMAL(9,6)) /  3600.0
 		),
-		s.ecorregion,
 		s.provincia,
 		s.region_dnc
-	FROM importacion.StagingKML s
-	WHERE s.id_log = @id_log
-	AND s.nombre IS NOT NULL
+	FROM #staging s
+	WHERE s.nombre IS NOT NULL
 	AND s.lat_dms IS NOT NULL
 	AND s.lon_dms IS NOT NULL
 	AND CHARINDEX('°', s.lat_dms) > 0
@@ -192,42 +212,46 @@ BEGIN
 	AND CHARINDEX('"', s.lon_dms) > 0
 
 	--si falla conversion dms a decimal
-	INSERT INTO importacion.ErroresKML(id_log, nombre, cat_Gral, lat_dms, lon_dms, motivo)
-	SELECT @id_log, nombre, cat_gral, latitud, longitud, 'Conversion DMS dio NULL'
-	FROM importacion.ValidosKML
-	WHERE id_log = @id_log
-	AND (latitud IS NULL OR longitud IS NULL);
+	INSERT INTO importacion.ErroresImportacion(id_log, tipo_archivo, registro_origen, dato1, dato2, motivo)
+	SELECT  @id_log,@tipo_archivo, v.nombre, s.lat_dms, s.lon_dms, 'Conversion DMS dio NULL'
+	FROM #validos v
+	INNER JOIN #staging s ON v.nombre = s.nombre
+	WHERE (v.latitud IS NULL OR v.longitud IS NULL);
 
-	DELETE FROM importacion.ValidosKML
-	WHERE id_log = @id_log
-	AND (latitud IS NULL OR longitud IS NULL);
+	DELETE FROM #validos
+	WHERE latitud IS NULL OR longitud IS NULL;
 
-	--AÑADIR TIPOS DE PARQUES DESDE KML
+	--AÑADIR TIPOS DE PARQUES DESDE KML (UPSERT
+	UPDATE tp
+	SET estado = 0
+	FROM parques.TipoParque tp
+	INNER JOIN (SELECT DISTINCT cat_gral FROM #validos WHERE cat_gral IS NOT NULL) v
+	ON tp.descripcion = v.cat_gral COLLATE DATABASE_DEFAULT;
+
 	INSERT INTO parques.TipoParque(descripcion, estado)
 	SELECT DISTINCT v.cat_gral, 0
-	FROM importacion.ValidosKML v
-	WHERE v.id_log = @id_log
-		AND v.cat_gral IS NOT NULL
+	FROM #validos v
+	WHERE v.cat_gral IS NOT NULL
 		AND NOT EXISTS (
 			SELECT 1 FROM parques.TipoParque tp
 			WHERE tp.descripcion = v.cat_gral COLLATE DATABASE_DEFAULT
 		);
 
 	--si categoria gral no matchea tipo parque
-	INSERT INTO importacion.ErroresKML (id_log, nombre, cat_gral, lat_dms, lon_dms, motivo)
-	SELECT @id_log, v.nombre, v.cat_gral, NULL,NULL,
+	INSERT INTO importacion.ErroresImportacion (id_log,tipo_archivo, registro_origen, dato1, dato2, motivo)
+	SELECT @id_log,@tipo_archivo,v.nombre, v.cat_gral, NULL,
 			CONCAT('Tipo de parque no encontrado: ', v.cat_gral)
-	FROM importacion.ValidosKML v
+	FROM #validos v
 	LEFT JOIN parques.TipoParque tp
 		ON descripcion = v.cat_gral COLLATE DATABASE_DEFAULT
-	WHERE v.id_log = @id_log
-	AND tp.id_tipo_parque IS NULL;
-
-	DELETE v
-	FROM importacion.ValidosKML v
-	LEFT JOIN parques.TipoParque tp
-		ON tp.descripcion = v.cat_gral COLLATE DATABASE_DEFAULT
 	WHERE tp.id_tipo_parque IS NULL;
+
+	DELETE FROM #validos
+	WHERE cat_gral IS NOT NULL
+	AND NOT EXISTS(
+		SELECT 1 FROM parques.TipoParque tp
+		WHERE tp.descripcion = #validos.cat_gral COLLATE DATABASE_DEFAULT
+	);
 
 	-- upsert
 
@@ -235,22 +259,21 @@ BEGIN
 		BEGIN TRANSACTION;
 		UPDATE p
 			SET 
-			p.latitud = v.latitud,
-			p.longitud = v.longitud,
-			p.superficie = v.superficie,
-			p.region = v.region,
-			p.provincia = v.provincia
+			latitud = v.latitud,
+			longitud = v.longitud,
+			superficie = v.superficie,
+			region = v.region,
+			provincia = v.provincia
 		FROM parques.Parque p
-		INNER JOIN importacion.ValidosKML v 
+		INNER JOIN #validos v 
 		ON p.nombre = v.nombre COLLATE DATABASE_DEFAULT
-		WHERE v.id_log = @id_log;
 		
 		SET @actualizados = @@ROWCOUNT;
 
 		INSERT INTO parques.Parque(nombre, id_tipo_parque, region, provincia,
 									latitud, longitud, superficie)
 		SELECT v.nombre, tp.id_tipo_parque, v.region, v.provincia, v.latitud, v.longitud, v.superficie
-		FROM importacion.ValidosKML v
+		FROM #validos v
 		INNER JOIN parques.TipoParque tp
 		ON tp.descripcion = v.cat_gral COLLATE DATABASE_DEFAULT
 		WHERE NOT EXISTS(
@@ -275,7 +298,7 @@ BEGIN
 	END CATCH;
 
 	SELECT @errores = COUNT(*)
-	FROM importacion.ErroresKML
+	FROM importacion.ErroresImportacion
 	WHERE id_log = @id_log;
 
 	SET @detalle = CONCAT(
@@ -290,48 +313,7 @@ BEGIN
 		errores = @errores,
 		detalle = @detalle
 	WHERE id_log = @id_log;
-
-	SELECT motivo, COUNT(*) AS cantidad
-    FROM importacion.ErroresKML
-    GROUP BY motivo
-    ORDER BY cantidad DESC;
-    
-    SELECT * FROM importacion.ErroresKML ORDER BY motivo, nombre;
 	
 END;
 GO
 
--- ejecución básica
-EXEC importacion.ImportarParquesKML
-     @ruta_archivo = 'C:\datasets finales\parques.kml';
-
-
--- Verificar resultado
-SELECT tipo_archivo, nombre_archivo, fecha, registros_ok, errores, detalle FROM importacion.LogImportacion ORDER BY Fecha DESC;
-SELECT * FROM parques.Parque;
-SELECT * FROM parques.TipoParque
-
--- Verificar UPSERT: ejecutar de nuevo, no debe duplicar
-EXEC importacion.ImportarParquesKML
-     @ruta_archivo = 'C:\datasets finales\parques.kml';
-
-SELECT COUNT(*) FROM parques.Parque;
-
-DECLARE @ultimo_log INT = (
-    SELECT MAX(id_log) FROM importacion.LogImportacion
-    WHERE tipo_archivo = 'SIB_KML'
-);
-
-SELECT nombre, cat_gral, lat_dms, lon_dms, motivo
-FROM importacion.ErroresKML
-WHERE id_log = @ultimo_log
-ORDER BY motivo, nombre;
-
-SELECT motivo, COUNT(*) AS cantidad
-FROM importacion.ErroresKML
-WHERE id_log = (
-    SELECT MAX(id_log) FROM importacion.LogImportacion
-    WHERE tipo_archivo = 'SIB_KML'
-)
-GROUP BY motivo
-ORDER BY cantidad DESC;

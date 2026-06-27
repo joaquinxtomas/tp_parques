@@ -257,6 +257,7 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
+		origen VARCHAR (50) NOT NULL DF_entrada_origen DEFAULT('TRANSACCIONAL'),
 		estado BIT NOT NULL CONSTRAINT DF_entrada_estado DEFAULT(0),
 
 		CONSTRAINT PK_Entrada PRIMARY KEY (id_entrada),
@@ -434,85 +435,34 @@ BEGIN
 	CREATE TABLE importacion.LogImportacion(
 		id_log INT IDENTITY(1,1) PRIMARY KEY,
 		tipo_archivo VARCHAR(50) NOT NULL,
-		nombre_archivo VARCHAR(100) NOT NULL,
+		nombre_archivo VARCHAR(500) NOT NULL,
 		fecha DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
 		registros_ok INT NOT NULL DEFAULT 0 CHECK (registros_ok >= 0),
 		errores INT NOT NULL DEFAULT 0 CHECK (errores >= 0),
-		detalle VARCHAR(200) NULL
+		detalle VARCHAR(500) NULL
 	)
 END
 GO
 
--- tablas de staging/errores/validos para importaciones (evito usar tablas temporales)
-IF NOT EXISTS (
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
-	AND TABLE_NAME = 'StagingKML'
-)
-BEGIN
-	CREATE TABLE importacion.StagingKML(
-		id_staging INT IDENTITY(1,1) NOT NULL,
-		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		sup_total VARCHAR(50),
-		lat_dms VARCHAR(50),
-		lon_dms VARCHAR(50),
-		ecorregion VARCHAR(200),
-		provincia VARCHAR(100),
-		region_dnc VARCHAR(100),
-		
-		CONSTRAINT PK_StagingKML PRIMARY KEY (id_staging),
-		CONSTRAINT FK_StagingKML_Log FOREIGN KEY(id_log)
-			REFERENCES importacion.LogImportacion(id_log)
-	);
-
-	CREATE INDEX StagingKML_idlog_IX ON importacion.StagingKML(id_log);
-END
-GO
+-- tabla de errores (especificos) en importaciones (evito usar tablas temporales)
 
 IF NOT EXISTS (
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
-	AND TABLE_NAME = 'ErroresKML'
+	AND TABLE_NAME = 'ErroresImportacion'
 )
 BEGIN
-	CREATE TABLE importacion.ErroresKML(
-		id_error INT IDENTITY(1,1) NOT NULL,
+	CREATE TABLE importacion.ErroresImportacion(
+		id_error INT IDENTITY(1,1) PRIMARY KEY,
 		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		lat_dms VARCHAR(50),
-		lon_dms VARCHAR(50),
-		motivo VARCHAR(200),
+		tipo_archivo VARCHAR(50) NOT NULL,
+		registro_origen VARCHAR(500),
+		dato1 VARCHAR(500),
+		dato2 VARCHAR(500),
+		motivo VARCHAR(200) NOT NULL,
 
-		CONSTRAINT PK_ErroresParques PRIMARY KEY(id_error),
-		CONSTRAINT FK_ErroresKML_Log FOREIGN KEY(id_log)
+		CONSTRAINT FK_ErroresImportacion_Log FOREIGN KEY(id_log)
 			REFERENCES importacion.LogImportacion(id_log)
 	);
 END
 GO
 
-IF NOT EXISTS(
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_sCHEMA = 'importacion'
-	AND TABLE_NAME = 'ValidosKML'
-)
-BEGIN 
-	CREATE TABLE importacion.ValidosKML(
-		id_valido INT IDENTITY(1,1) NOT NULL,
-		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		superficie DECIMAL(12,2),
-		latitud DECIMAL(9,6),
-		longitud DECIMAL(9,6),
-		ecorregion VARCHAR(200),
-		provincia VARCHAR(100),
-		region VARCHAR(100),
-
-		CONSTRAINT PK_ValidosParques PRIMARY KEY(id_valido),
-		CONSTRAINT FK_ValidosKML_Log FOREIGN KEY(id_log)
-			REFERENCES importacion.LogImportacion(id_log)
-	);
-
-	CREATE INDEX ValidosKML_idlog_IX ON importacion.ValidosKML(id_log);
-END
-GO

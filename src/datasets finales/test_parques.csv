@@ -1,0 +1,5 @@
+Año,Región,Mes,Provincia,Área Protegida,Total,Residentes,No residentes
+2020,Litoral,Enero,Misiones,NOMBRE_DE_UN_PARQUE_REAL,1000,800,200
+2020,Litoral,Febrero,Misiones,,500,400,100
+2020,Litoral,MesInvalido,Misiones,NOMBRE_DE_UN_PARQUE_REAL,500,400,100
+2020,Litoral,Marzo,Misiones,Parque Que No Existe,500,400,100
