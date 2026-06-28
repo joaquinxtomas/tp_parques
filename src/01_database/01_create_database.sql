@@ -14,6 +14,23 @@ GO
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'ParquesNacionales')
 BEGIN
 	CREATE DATABASE ParquesNacionales
-	COLLATE Modern_Spanish_CI_AI;
+	ON PRIMARY (
+		NAME     = 'ParquesNacionales',
+		FILENAME = 'D:\SQLData\ParquesNacionales.mdf',
+		SIZE     = 64MB,
+		FILEGROWTH = 64MB
+	)
+	LOG ON (
+		NAME     = 'ParquesNacionales_log',
+		FILENAME = 'E:\SQLLogs\ParquesNacionales_log.ldf',
+		SIZE     = 64MB,
+		FILEGROWTH = 64MB
+	)
+	COLLATE Modern_Spanish_CI_AS;
 END
+GO
+
+-- Recovery Model FULL: permite recuperar a un punto exacto en el tiempo.
+-- Requiere backups periodicos del log de transacciones.
+ALTER DATABASE ParquesNacionales SET RECOVERY FULL;
 GO

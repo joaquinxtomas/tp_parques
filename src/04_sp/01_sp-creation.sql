@@ -14,7 +14,19 @@ GO
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'ParquesNacionales')
 BEGIN
 	CREATE DATABASE ParquesNacionales
-	COLLATE Modern_Spanish_CI_AI;
+	ON PRIMARY (
+		NAME     = 'ParquesNacionales',
+		FILENAME = 'D:\SQLData\ParquesNacionales.mdf',
+		SIZE     = 64MB,
+		FILEGROWTH = 64MB
+	)
+	LOG ON (
+		NAME     = 'ParquesNacionales_log',
+		FILENAME = 'E:\SQLLogs\ParquesNacionales_log.ldf',
+		SIZE     = 64MB,
+		FILEGROWTH = 64MB
+	)
+	COLLATE Modern_Spanish_CI_AS;
 END
 GO
 
@@ -314,7 +326,7 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
-		origen VARCHAR (50) NOT NULL DF_entrada_origen DEFAULT('TRANSACCIONAL'),
+		origen VARCHAR (50) NOT NULL CONSTRAINT DF_entrada_origen DEFAULT('TRANSACCIONAL'),
 		estado BIT NOT NULL CONSTRAINT DF_entrada_estado DEFAULT(0),
 
 		CONSTRAINT PK_Entrada PRIMARY KEY (id_entrada),
