@@ -314,6 +314,7 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
+		origen VARCHAR (50) NOT NULL DF_entrada_origen DEFAULT('TRANSACCIONAL'),
 		estado BIT NOT NULL CONSTRAINT DF_entrada_estado DEFAULT(0),
 
 		CONSTRAINT PK_Entrada PRIMARY KEY (id_entrada),
@@ -354,58 +355,6 @@ BEGIN
 	)
 END
 GO
-
-/*IF NOT EXISTS(
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas'
-	AND TABLE_NAME = 'RegistroVentas'
-)
-BEGIN
-CREATE TABLE ventas.RegistroVentas(
-	id_visita INT IDENTITY(1,1) PRIMARY KEY,
-	id_parque INT NULL, --CAMBIAR CUANDO TERMINEN LOS TESTEOS
-	region VARCHAR(50) NOT NULL,
-	anio INT NOT NULL,
-	mes VARCHAR(20) NOT NULL,
-	total_visitantes INT NOT NULL DEFAULT 0,
-	residentes INT NULL,
-	no_residentes INT NULL,
-	estado BIT NOT NULL DEFAULT 1,
-
-	CONSTRAINT FK_RegistroVentas_Parque
-		FOREIGN KEY (id_parque) REFERENCES parques.Parque(id_parque),
-	CONSTRAINT CK_RegistroVentas_Mes
-		CHECK(mes BETWEEN 1 AND 12)
-)
-END
-GO*/
-
--- Ya no sería necesaria porque TicketVisitante permite múltiples tipos de visitantes por ticket y las actividades se hace otro ticket a parte, pero se deja para mantener el historial de la primera entrega
--- IF NOT EXISTS (
--- 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'ventas' 
--- 	AND TABLE_NAME = 'DetalleTicket')
--- BEGIN
--- 	CREATE TABLE ventas.DetalleTicket(
--- 		id_detalle INT IDENTITY (1,1) NOT NULL,
--- 		id_ticket INT NOT NULL,
--- 		id_atraccion INT NULL,
--- 		cantidad INT NOT NULL,
--- 		precio_unit DECIMAL(10,2) NOT NULL,
--- 		subtotal DECIMAL(12,2) NOT NULL,
--- 		estado BIT NOT NULL CONSTRAINT DF_detalle_ticket_estado DEFAULT(0),
---
---		CONSTRAINT PK_DetalleTicket PRIMARY KEY (id_detalle),
---		CONSTRAINT FK_DetalleTicket_Ticket FOREIGN KEY (id_ticket)
---			REFERENCES ventas.Ticket(id_ticket),
---		CONSTRAINT FK_DetalleTicket_Atraccion FOREIGN KEY (id_atraccion)
---			REFERENCES actividades.Atraccion(id_atraccion),
---		CONSTRAINT CK_DetalleTicket_CantidadPositiva CHECK (cantidad > 0),
---		CONSTRAINT CK_DetalleTicket_PrecioPositivo CHECK (precio_unit >= 0),
---		CONSTRAINT CK_DetalleTicket_Subtotal CHECK (
---			subtotal = cantidad * precio_unit
---		)
---	);
---END
---GO
 
 
 -- SCHEMA CONCESIONES
@@ -500,76 +449,22 @@ BEGIN
 END
 GO
 
--- tablas de staging/errores/validos para importaciones (evito usar tablas temporales)
 IF NOT EXISTS (
 	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
-	AND TABLE_NAME = 'StagingKML'
+	AND TABLE_NAME = 'ErroresImportacion'
 )
 BEGIN
-	CREATE TABLE importacion.StagingKML(
-		id_staging INT IDENTITY(1,1) NOT NULL,
+	CREATE TABLE importacion.ErroresImportacion(
+		id_error INT IDENTITY(1,1) PRIMARY KEY,
 		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		sup_total VARCHAR(50),
-		lat_dms VARCHAR(50),
-		lon_dms VARCHAR(50),
-		ecorregion VARCHAR(200),
-		provincia VARCHAR(100),
-		region_dnc VARCHAR(100),
-		
-		CONSTRAINT PK_StagingKML PRIMARY KEY (id_staging),
-		CONSTRAINT FK_StagingKML_Log FOREIGN KEY(id_log)
+		tipo_archivo VARCHAR(50) NOT NULL,
+		registro_origen VARCHAR(500),
+		dato1 VARCHAR(500),
+		dato2 VARCHAR(500),
+		motivo VARCHAR(200) NOT NULL,
+
+		CONSTRAINT FK_ErroresImportacion_Log FOREIGN KEY(id_log)
 			REFERENCES importacion.LogImportacion(id_log)
 	);
-
-	--CREATE INDEX StagingKML_idlog_IX ON importacion.StagingKML(id_log);
-END
-GO
-
-IF NOT EXISTS (
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'importacion'
-	AND TABLE_NAME = 'ErroresKML'
-)
-BEGIN
-	CREATE TABLE importacion.ErroresKML(
-		id_error INT IDENTITY(1,1) NOT NULL,
-		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		lat_dms VARCHAR(50),
-		lon_dms VARCHAR(50),
-		motivo VARCHAR(200),
-
-		CONSTRAINT PK_ErroresParques PRIMARY KEY(id_error),
-		CONSTRAINT FK_ErroresKML_Log FOREIGN KEY(id_log)
-			REFERENCES importacion.LogImportacion(id_log)
-	);
-END
-GO
-
-IF NOT EXISTS(
-	SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_sCHEMA = 'importacion'
-	AND TABLE_NAME = 'ValidosKML'
-)
-BEGIN 
-	CREATE TABLE importacion.ValidosKML(
-		id_valido INT IDENTITY(1,1) NOT NULL,
-		id_log INT NOT NULL,
-		nombre VARCHAR(200),
-		cat_gral VARCHAR(100),
-		superficie DECIMAL(12,2),
-		latitud DECIMAL(9,6),
-		longitud DECIMAL(9,6),
-		ecorregion VARCHAR(200),
-		provincia VARCHAR(100),
-		region VARCHAR(100),
-
-		CONSTRAINT PK_ValidosParques PRIMARY KEY(id_valido),
-		CONSTRAINT FK_ValidosKML_Log FOREIGN KEY(id_log)
-			REFERENCES importacion.LogImportacion(id_log)
-	);
-
-	--CREATE INDEX ValidosKML_idlog_IX ON importacion.ValidosKML(id_log);
 END
 GO
