@@ -1141,3 +1141,248 @@ BEGIN CATCH
     PRINT 'CASO 11 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
+
+--====================================================================================
+--								TEST ABM PERSONAL
+--====================================================================================
+-- Pruebas asignacionGP_alta
+
+-- 1: Id de parque obligatorio
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: No ingresó parque.';
+    EXEC personal.asignacionGP_alta @id_guardaparque = 1, @id_parque = NULL, @id_guia = 1, @fecha_desde = '2026-07-01', @fecha_hasta = '2026-12-31', @motivo = 'Error Parque NULL';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 2: Parque inexistente
+BEGIN TRY
+    PRINT 'CASO 2 FALLO: no existe el parque';
+    EXEC personal.asignacionGP_alta @id_guardaparque = 1, @id_parque = 999, @id_guia = 1, @fecha_desde = '2026-07-01', @fecha_hasta = '2026-12-31', @motivo = 'Error Parque Inexistente';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 3: Id de guardaparque obligatorio
+BEGIN TRY
+    EXEC personal.asignacionGP_alta @id_guardaparque = NULL, @id_parque = 1, @id_guia = 1, @fecha_desde = '2026-07-01', @fecha_hasta = '2026-12-31', @motivo = 'Error Guardaparque NULL';
+    PRINT 'CASO 3 FALLO: No ingresó guardaparque';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 4: Guardaparque inexistente
+BEGIN TRY
+    EXEC personal.asignacionGP_alta @id_guardaparque = 999, @id_parque = 1, @id_guia = 1, @fecha_desde = '2026-07-01', @fecha_hasta = '2026-12-31', @motivo = 'Error Guardaparque Inexistente';
+    PRINT 'CASO 4 FALLO: no existe el guardaparque';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 4 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 5: Guía inexistente
+BEGIN TRY
+    EXEC personal.asignacionGP_alta @id_guardaparque = 1, @id_parque = 1, @id_guia = 999, @fecha_desde = '2026-07-01', @fecha_hasta = '2026-12-31', @motivo = 'Error Guía Inexistente';
+    PRINT 'CASO 5 FALLO: No existe el guía';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 5 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 6: Fecha de comienzo obligatoria
+BEGIN TRY
+    EXEC personal.asignacionGP_alta @id_guardaparque = 1, @id_parque = 1, @id_guia = 1, @fecha_desde = NULL, @fecha_hasta = '2026-12-31', @motivo = 'Error Fecha NULL';
+    PRINT 'CASO 6 FALLO: no ingreso fecha inicial';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 6 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- 7: Asignación duplicada
+BEGIN TRY
+    EXEC personal.asignacionGP_alta @id_guardaparque = 1, @id_parque = 1, @id_guia = NULL, @fecha_desde = '2026-01-01', @fecha_hasta = '2026-06-30', @motivo = 'Error Duplicado';
+    PRINT 'CASO 7 FALLO: no puede hacer asignación';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 7 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+--    EXEC parques.EliminarParque @id_parque = 9999;
+
+-- Pruebas guardaparque
+-- Alta
+-- Nombre obligatorio
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: no ingresó nombre';
+    EXEC personal.guardaparque_alta @nombre = NULL, @dni = '45111222', @vigencia_desde = '2026-06-18', @vigencia_hasta = '2030-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- DNI obligatorio
+
+    EXEC personal.guardaparque_alta @nombre = 'Pedro Picapiedra', @dni = NULL, @vigencia_desde = '2026-06-18', @vigencia_hasta = '2030-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Fecha de comienzo obligatoria
+
+EXEC personal.guardaparque_alta @nombre = 'Pedro Picapiedra', @dni = '45111222', @vigencia_desde = NULL, @vigencia_hasta = '2030-12-31';
+
+-- Baja
+-- Guardaparque inexistente
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: no existe guardaparque';
+    EXEC personal.guardaparque_baja @id_guardaparque = 99999;
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Ejecución Exitosa
+BEGIN TRY
+    PRINT 'CASO 2 EXITO: baja lógica realizada';
+    EXEC personal.guardaparque_baja @id_guardaparque = 2;
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Modificación
+-- Guardaparque inexistente
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: no existe el guardaparque';
+    EXEC personal.guardaparque_modificacion @id_guardaparque = 99999,@nombre = 'Carlos Gómez', @dni = '32456789', @vigencia_desde = '2020-01-15', @vigencia_hasta = '2028-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Nombre obligatorio
+BEGIN TRY
+    PRINT 'CASO 2 FALLO: no ingresó nombre';
+    EXEC personal.guardaparque_modificacion @id_guardaparque = 1, @nombre = NULL, @dni = '32456789', @vigencia_desde = '2020-01-15', @vigencia_hasta = '2028-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- DNI obligatorio
+BEGIN TRY
+    PRINT 'CASO 3 FALLO: no ingresó DNI.';
+    EXEC personal.guardaparque_modificacion @id_guardaparque = 1, @nombre = 'Carlos Gómez', @dni = NULL, @vigencia_desde = '2020-01-15', @vigencia_hasta = '2028-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Fecha de comienzo obligatoria
+BEGIN TRY
+    PRINT 'CASO 4 FALLO: no ingresó fecha inicial';
+    EXEC personal.guardaparque_modificacion @id_guardaparque = 1, @nombre = 'Carlos Gómez', @dni = '32456789', @vigencia_desde = NULL, @vigencia_hasta = '2028-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 4 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Guía
+-- Alta
+-- Guía existente
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: ya existe el guía';
+    EXEC personal.guiaAutorizado_alta @nombre = 'Carlos Gómez', @dni = '32456789', @especialidad = 'Trekking', @titulo = 'Guía Profesional', @vigencia_desde = '2026-06-18', @vigencia_hasta = '2029-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Nombre obligatorio
+BEGIN TRY
+    PRINT 'CASO 2 FALLO: no ingresó nombre';
+    EXEC personal.guiaAutorizado_alta @nombre = NULL, @dni = '49111222', @especialidad = 'Fotografía', @titulo = 'Guía Local', @vigencia_desde = '2026-06-18', @vigencia_hasta = '2029-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- DNI obligatorio
+BEGIN TRY
+    PRINT 'CASO 3 FALLO: no ingresó DNI';
+    EXEC personal.guiaAutorizado_alta @nombre = 'Esteban Quito', @dni = NULL, @especialidad = 'Fotografía', @titulo = 'Guía Local', @vigencia_desde = '2026-06-18', @vigencia_hasta = '2029-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Fecha de comienzo obligatoria
+BEGIN TRY
+    PRINT 'CASO 4 FALLO: no ingresó fecha inicial';
+    EXEC personal.guiaAutorizado_alta @nombre = 'Esteban Quito', @dni = '49111222', @especialidad = 'Fotografía', @titulo = 'Guía Local', @vigencia_desde = NULL, @vigencia_hasta = '2029-12-31';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 4 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Baja
+-- Guía inexistente
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: no existe guía';
+    EXEC personal.guia_baja @id_guia = 99999;
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Ejecución Exitosa 
+BEGIN TRY
+    PRINT 'CASO 2 ÉXITO: baja lógica realizada.';
+    EXEC personal.guia_baja @id_guia = 2;
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 FALLO : ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Modificación
+-- Guía inexistente
+BEGIN TRY
+    PRINT 'CASO 1 FALLO: no existe guía';
+    EXEC personal.guia_modificacion @id_guia = 99999, @nombre = 'Laura Benítez', @dni = '38444555', @especialidad = 'Trekking y Alta Montaña', @titulo = 'Guía Profesional de Turismo', @vigencia_desde = '2024-01-01', @vigencia_hasta = '2027-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 1 FALLO : ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Nombre obligatorio
+BEGIN TRY
+    PRINT 'CASO 2 FALLO: no ingresó nombre';
+    EXEC personal.guia_modificacion @id_guia = 1, @nombre = NULL, @dni = '38444555', @especialidad = 'Trekking y Alta Montaña', @titulo = 'Guía Profesional de Turismo', @vigencia_desde = '2024-01-01', @vigencia_hasta = '2027-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 2 FALLO : ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- DNI obligatorio
+BEGIN TRY
+    PRINT 'CASO 3 FALLO: no ingresó DNI';
+    EXEC personal.guia_modificacion @id_guia = 1, @nombre = 'Laura Benítez', @dni = NULL, @especialidad = 'Trekking y Alta Montaña', @titulo = 'Guía Profesional de Turismo', @vigencia_desde = '2024-01-01', @vigencia_hasta = '2027-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 3 FALLO : ' + ERROR_MESSAGE();
+END CATCH
+GO
+-- Fecha de comienzo obligatoria
+BEGIN TRY
+    PRINT 'CASO 4 FALLO: no ingresó fecha inicial';
+    EXEC personal.guia_modificacion @id_guia = 1, @nombre = 'Laura Benítez', @dni = '38444555', @especialidad = 'Trekking y Alta Montaña', @titulo = 'Guía Profesional de Turismo', @vigencia_desde = NULL, @vigencia_hasta = '2027-01-01';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 4 FALLO : ' + ERROR_MESSAGE();
+END CATCH
+GO
