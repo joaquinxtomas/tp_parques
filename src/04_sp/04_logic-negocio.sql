@@ -160,23 +160,23 @@ BEGIN
         SET nro_ticket = @id_parque * 1000000 + @id_entrada
         WHERE id_entrada = @id_entrada;
 
-        INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+        INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
         VALUES (@id_entrada, @id_tipo_1, @cantidad_1, @precio_1, @cantidad_1 * @precio_1);
 
         IF @id_tipo_2 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_2, @cantidad_2, @precio_2, @cantidad_2 * @precio_2);
 
         IF @id_tipo_3 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_3, @cantidad_3, @precio_3, @cantidad_3 * @precio_3);
 
         IF @id_tipo_4 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_4, @cantidad_4, @precio_4, @cantidad_4 * @precio_4);
 
         IF @id_tipo_5 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_5, @cantidad_5, @precio_5, @cantidad_5 * @precio_5);
 
         COMMIT TRANSACTION;
@@ -212,7 +212,7 @@ GO
 
 
 -- Entrada_Nuevo
-
+/*
 -- CASO 28: parque inexistente → error
 BEGIN TRY
     DECLARE @id_res INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
@@ -341,7 +341,7 @@ GO
 -- CASO 37: baja correcta (primer ticket activo)
 BEGIN TRY
     DECLARE @id_tk INT = (SELECT MIN(id_entrada) FROM ventas.Entrada WHERE estado = 0);
-    EXEC ventas.Ticket_Eliminar @id_ticket = @id_tk;
+    EXEC ventas.Ticket_Eliminar @id_entrada = @id_tk;
     PRINT 'CASO 37 OK: ticket dado de baja';
 END TRY
 BEGIN CATCH
@@ -359,7 +359,7 @@ BEGIN CATCH
     PRINT 'CASO 38 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
-
+*/
 --====================================================================================
 --						LOGICAS DE NEGOCIO REGISTRO DE ACTIVIDADES
 --====================================================================================

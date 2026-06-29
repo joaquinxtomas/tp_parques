@@ -13,7 +13,7 @@ SELECT * FROM parques.Parque;
 SELECT * FROM parques.TipoParque
 SELECT COUNT(*) FROM parques.Parque;
 SELECT COUNT(*) FROM parques.TipoParque;
-GO;
+GO
 
 -- 3. verificar ultimo log y detalles de errores
 DECLARE @ultimo_log INT = (
@@ -24,7 +24,7 @@ SELECT * FROM importacion.LogImportacion
 WHERE id_log = @ultimo_log;
 SELECT * FROM importacion.ErroresImportacion
 WHERE id_log = @ultimo_log
-GO;
+GO
 
 -- 4. verificar upsert, no debe duplicar nada
 DECLARE @cantidad_antes INT = (SELECT COUNT(*) FROM parques.Parque);
@@ -34,7 +34,7 @@ EXEC importacion.ImportarParquesKML
 
 SELECT COUNT(*) AS cantidad_actual, @cantidad_antes as cantidad_antes
 FROM parques.Parque
-GO;
+GO
 
 -- 5. verificar el upsert de tipo parque
 DECLARE @cantidad_antes INT = (SELECT COUNT(*) FROM parques.TipoParque);
@@ -44,7 +44,7 @@ EXEC importacion.ImportarParquesKML
 
 SELECT COUNT(*) AS cantidad_actual, @cantidad_antes as cantidad_antes
 FROM parques.TipoParque
-GO;
+GO
 
 -- 6. verificar que el sp realmente actualiza valores
 DECLARE @nombre_parque_test VARCHAR(200) = (SELECT TOP 1 nombre FROM parques.Parque);

@@ -1,3 +1,9 @@
+-- ============================================================
+-- FECHA: 27/06/2026
+-- INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
+-- Descripción: Generacion de SP para reporte 1 (Visitas por parque semanales, mensuales y anuales
+-- ============================================================
+
 use ParquesNacionales
 GO
 

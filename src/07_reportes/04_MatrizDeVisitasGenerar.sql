@@ -20,7 +20,7 @@ BEGIN
 
     SELECT
         parque,
-        ISNULL([1], 0)  AS Ene, -- SELECCIONO LA COLUMNA DE CADA MES O 0 SI NO EXISTE
+        ISNULL([1], 0)  AS Ene,
         ISNULL([2], 0)  AS Feb,
         ISNULL([3], 0)  AS Mar,
         ISNULL([4], 0)  AS Abr,

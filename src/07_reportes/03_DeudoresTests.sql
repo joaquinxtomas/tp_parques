@@ -1,5 +1,4 @@
 -- ============================================================
--- FECHA: 28/06/2026
 -- INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
 -- Descripción: Testing del Reporte 3 - Estado de pagos de concesiones.
 --              Verifica ejecución sin error y valida los montos de deuda

@@ -194,7 +194,7 @@ GO
 SELECT e.id_entrada, e.nro_ticket, e.fecha, e.forma_pago, e.total,
        tv.descripcion AS tipo_visitante, tv2.cantidad, tv2.precio_unit, tv2.subtotal
 FROM   ventas.Entrada e
-JOIN   ventas.TicketVisitante tv2 ON tv2.id_ticket = e.id_entrada
+JOIN   ventas.TicketVisitante tv2 ON tv2.id_entrada = e.id_entrada
 JOIN   ventas.TipoVisitante   tv  ON tv.id_tipo_visitante = tv2.id_tipo_visitante
 WHERE  e.estado = 0
 ORDER BY e.id_entrada, tv.descripcion;
