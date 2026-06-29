@@ -1,7 +1,7 @@
 USE ParquesNacionales
 GO
 
---TESTING IMPORTACION KML (OTRO ARCHIVO)
+--TESTING IMPORTACION KML 
 
 -- 1. ejecución básica
 EXEC importacion.ImportarParquesKML
@@ -90,17 +90,57 @@ SELECT * FROM importacion.LogImportacion
 WHERE id_log = @ultimo_log;
 GO
 
-
 -----------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------
 -- TESTING IMPORTACION CSV
+
+--PRECONDICIONES (tienen que estar los tipos de visitante cargados)
+EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Adulto';
+EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Estudiante';
+EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Jubilado';
+EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Discapacitado';
+EXEC ventas.TipoVisitante_Nuevo @descripcion = 'No residente';
+
+--  Definir precios fijos por tipo de visitante
+DECLARE @precios_test TABLE (
+    id_tipo_visitante INT PRIMARY KEY,
+    precio DECIMAL(10,2)
+);
+
+INSERT INTO @precios_test VALUES
+    (1, 1500.00),  -- Adulto
+    (2, 800.00),   -- Menor
+    (3, 1200.00),  -- Jubilado
+    (4, 0.00);     -- Bebé / Discapacitado
+
+--  Insertar para TODOS los parques
+INSERT INTO ventas.PrecioEntrada (id_parque, id_tipo_visitante, precio, fecha_inicio, fecha_fin)
+SELECT 
+    p.id_parque,
+    pr.id_tipo_visitante,
+    pr.precio,
+    '2008-01-01' AS fecha_inicio,   -- cubre todo el histórico
+    '2026-12-31' AS fecha_fin      
+FROM parques.Parque p
+CROSS JOIN @precios_test pr
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM ventas.PrecioEntrada pe 
+    WHERE pe.id_parque = p.id_parque 
+      AND pe.id_tipo_visitante = pr.id_tipo_visitante
+);
 
 -- 1. ejecucion basica
 EXEC importacion.ImportarVisitasCSV
     @ruta_archivo = 'C:\datasets finales\areas_protegidas.csv';
 
+SELECT * FROM ventas.TicketVisitante tv
+INNER JOIN ventas.PrecioEntrada pe ON tv.id_tipo_visitante = pe.id_tipo_visitante
+WHERE tv.id_tipo_visitante = 5
+
 -- 2. check de tablas de entrada y ticket visitante y sus cantidades
-SELECT * FROM ventas.TicketVisitante
+SELECT DISTINCT tv.id_tipo_visitante, t.descripcion FROM ventas.TicketVisitante tv
+INNER JOIN ventas.TipoVisitante t ON tv.id_tipo_visitante = t.id_tipo_visitante 
 SELECT * FROM ventas.Entrada
 
 -- 3. verificar cantidades de cada uno
