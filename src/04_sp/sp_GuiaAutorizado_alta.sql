@@ -6,46 +6,6 @@
 
 USE ParquesNacionales;
 GO
-CREATE OR ALTER PROCEDURE personal.guiaAutorizado_alta
-    @nombre varchar(100),
-    @dni varchar(10),
-    @especialidad varchar(100),
-    @titulo varchar(100),
-    @vigencia_desde date,
-    @vigencia_hasta date
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    DECLARE @activo bit = 1;
-    -- Chequeo que no exista el guía que se quiere cargar
-    
-    IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni = @dni and nombre = @nombre)
-        SET @v_errores += 'Ya existe el guía. ';
-
-    -- Chequeo que los campos obligatorios se hayan recibido
-    IF @nombre IS NULL
-        SET @v_errores += 'El nombre del guía es obligatorio. ';
-    
-    IF @dni IS NULL
-        SET @v_errores += 'El DNI del guía es obligatorio. ';
-  
-    IF @vigencia_desde IS NULL
-        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
-
-    -- Salgo con error en caso de existir
-    
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    -- 
-
-    INSERT INTO personal.GuiaAutorizado(nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, activo)
-    VALUES (@nombre, @dni, @especialidad, @titulo, @vigencia_desde, @vigencia_hasta, @activo);
-END
 
 -- Pruebas sobre validaciones
 

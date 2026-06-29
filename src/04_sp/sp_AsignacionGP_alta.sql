@@ -5,46 +5,7 @@
 
 USE ParquesNacionales;
 GO
-CREATE OR ALTER PROCEDURE personal.asignacionGP_alta
-    @id_guardaparque int,
-    @id_parque int,
-    @id_guia int,
-    @fecha_desde date,
-    @fecha_hasta date,
-    @motivo varchar(255)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    
-    IF @id_parque IS NULL
-        SET @v_errores += 'La id del parque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
-            set @v_errores += 'No existe el parque seleccionado. ';
-    IF @id_guardaparque IS NULL
-        SET @v_errores += 'La id del guardaparque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
-            set @v_errores += 'No existe el guardaparque seleccionado. ';
-    IF @id_guia IS not NULL
-        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
-            set @v_errores += 'No existe el guía seleccionado. ';
-    IF @fecha_desde IS NULL
-        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
 
-    IF EXISTS (SELECT 1 FROM personal.AsignacionGP WHERE id_guardaparque = @id_guardaparque and id_parque = @id_parque and fecha_desde = @fecha_desde)
-        SET @v_errores += 'Ya existe la asignación del guardaparque en este parque para la fecha indicada. ';
-            
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO personal.AsignacionGP(id_guardaparque, id_parque, id_guia, fecha_desde, fecha_hasta, motivo)
-    VALUES (@id_guardaparque, @id_parque, @id_guia, @fecha_desde, @fecha_hasta, @motivo);
-END
 
 insert into parques.Parque(nombre, 
 

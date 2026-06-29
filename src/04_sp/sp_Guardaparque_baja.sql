@@ -5,31 +5,7 @@
 
 USE ParquesNacionales;
 GO
-CREATE OR ALTER PROCEDURE personal.guardaparque_baja
-    @id_guardaparque int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    DECLARE @activo bit = 0;
 
-    -- Chequeo que exista el guardaparque
-    
-     IF NOT EXISTS (SELECT 1 FROM personal.Guardaparque WHERE id_guardaparque = @id_guardaparque)
-        SET @v_errores += 'No se encontró el guardaparque. ';
-            
-    -- Salgo con error si no lo encuentro
-    
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    -- Actializo al campo activo para la baja lógica
-
-    update personal.Guardaparque set activo = @activo where id_guardaparque = @id_guardaparque
-END
 
 -- Pruebas de validaciones
 
