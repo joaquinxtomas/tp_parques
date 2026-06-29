@@ -257,7 +257,7 @@ BEGIN
 		total DECIMAL(12,2) NOT NULL,
 		forma_pago VARCHAR(20) NOT NULL,
 		nro_ticket INT NOT NULL,
-		origen VARCHAR (50) NOT NULL DF_entrada_origen DEFAULT('TRANSACCIONAL'),
+		origen VARCHAR (50) NOT NULL CONSTRAINT DF_entrada_origen DEFAULT('TRANSACCIONAL'),
 		estado BIT NOT NULL CONSTRAINT DF_entrada_estado DEFAULT(0),
 
 		CONSTRAINT PK_Entrada PRIMARY KEY (id_entrada),
