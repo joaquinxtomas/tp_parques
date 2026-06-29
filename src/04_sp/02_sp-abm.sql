@@ -774,7 +774,8 @@ CREATE OR ALTER PROCEDURE actividades.InsertarAtraccion
 	@costo DECIMAL(10,2),
 	@duracion INT,
 	@cupo_maximo INT,
-	@tipo VARCHAR(20)
+	@tipo VARCHAR(20),
+	@turno TIME
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -789,11 +790,9 @@ BEGIN
 
 	IF @nombre IS NULL OR @nombre = ''
 		SET @v_errores += 'El nombre es obligatorio. ';
-	ELSE IF EXISTS(
-		SELECT 1 FROM actividades.Atraccion
-		WHERE nombre = @nombre AND id_parque = @id_parque
-	)
-		SET @v_errores += 'Ya existe una atracción con ese nombre. ';
+
+	IF @turno IS NULL                
+		SET @v_errores += 'El turno (horario) es obligatorio. ';
 
 	IF @costo IS NULL
 		SET @v_errores += 'El costo es obligatorio (colocar 0 si es gratuita). ';
@@ -809,6 +808,13 @@ BEGIN
 	IF @tipo IS NULL OR @tipo = ''
 		SET @v_errores += 'El tipo es obligatorio. ';
 
+	IF @v_errores = '' AND EXISTS (
+		SELECT 1 FROM actividades.Atraccion
+		WHERE nombre = @nombre AND id_parque = @id_parque AND turno = @turno
+		  AND estado = 0
+	)
+		SET @v_errores += 'Ya existe una atracción activa con ese nombre, parque y turno. ';
+
 	IF @v_errores <> ''
 	BEGIN 
 		;THROW 50000, @v_errores, 1;
@@ -816,8 +822,23 @@ BEGIN
 
 	BEGIN TRY
 		BEGIN TRANSACTION;
-		INSERT INTO actividades.Atraccion (id_parque, nombre, costo, duracion, cupo_maximo, tipo)
-		VALUES (@id_parque, @nombre, @costo, @duracion, @cupo_maximo, @tipo);
+		IF EXISTS (			-- Si ya existe una con la misma clave pero dada de baja -> reactivar (no insertar)
+			SELECT 1 FROM actividades.Atraccion
+			WHERE nombre = @nombre AND id_parque = @id_parque AND turno = @turno
+			  AND estado = 1
+		)
+		BEGIN
+			UPDATE actividades.Atraccion
+			SET costo = @costo, duracion = @duracion, cupo_maximo = @cupo_maximo,
+			    tipo = @tipo, estado = 0
+			WHERE nombre = @nombre AND id_parque = @id_parque AND turno = @turno
+			  AND estado = 1;
+		END
+		ELSE
+		BEGIN
+			INSERT INTO actividades.Atraccion (id_parque, nombre, costo, duracion, cupo_maximo, tipo, turno)
+			VALUES (@id_parque, @nombre, @costo, @duracion, @cupo_maximo, @tipo, @turno);
+		END
 		COMMIT TRANSACTION;
 	END TRY
 	BEGIN CATCH
@@ -835,7 +856,8 @@ CREATE OR ALTER PROCEDURE actividades.ActualizarAtraccion
     @costo DECIMAL(10,2),
     @duracion INT,
     @cupo_maximo INT,
-    @tipo VARCHAR(20)
+    @tipo VARCHAR(20),
+	@turno TIME
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -850,30 +872,33 @@ BEGIN
     SET @nombre = TRIM(@nombre)
     SET @tipo = TRIM(@tipo)
 
-    IF @id_parque_atraccion IS NULL --si no la encontro en el select anterior, queda en NULL
+	IF @id_parque_atraccion IS NULL --si no la encontro en el select anterior, queda en NULL
         SET @v_errores += 'La atraccion no existe. ';
-
     IF @nombre IS NULL OR @nombre = ''
         SET @v_errores += 'El nombre es obligatorio ';
+    IF @turno IS NULL                     
+        SET @v_errores += 'El turno (horario) es obligatorio. ';
 
-    ELSE IF EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = @nombre 
-                    AND id_parque = @id_parque_atraccion AND id_atraccion <> @id_atraccion)
-        SET @v_errores += 'La atraccion ya existe en el mismo parque. ';
+    IF @nombre <> '' AND @turno IS NOT NULL AND EXISTS (
+        SELECT 1 FROM actividades.Atraccion
+        WHERE nombre = @nombre
+          AND id_parque = @id_parque_atraccion
+          AND turno = @turno
+          AND id_atraccion <> @id_atraccion
+          AND estado = 0
+    )
+        SET @v_errores += 'Ya existe otra atraccion activa con ese nombre, parque y turno. ';
 
     IF @costo IS NULL 
         SET @v_errores += 'El costo es obligatorio. ';
     ELSE IF @costo < 0
         SET @v_errores += 'El costo debe ser positivo (mayor a 0). ';
-
     IF @duracion IS NOT NULL AND @duracion <= 0 
         SET @v_errores += 'La duracion debe ser positiva (mayor a 0). ';
-
     IF @cupo_maximo IS NOT NULL AND @cupo_maximo <= 0
         SET @v_errores += 'El cupo maximo debe ser positivo (mayor a 0). ';
-
     IF @tipo IS NULL OR @tipo = ''
         SET @v_errores += 'El tipo es obligatorio. ';
-
     IF @v_errores <> ''
     BEGIN 
         ;THROW 50000, @v_errores, 1;
@@ -887,7 +912,8 @@ BEGIN
             costo = @costo,
             duracion = @duracion,
             cupo_maximo = @cupo_maximo,
-            tipo = @tipo
+            tipo = @tipo,
+			turno = @turno
         WHERE id_atraccion = @id_atraccion;
 
         COMMIT TRANSACTION;

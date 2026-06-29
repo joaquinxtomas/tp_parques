@@ -199,6 +199,7 @@ BEGIN
 		costo DECIMAL(10,2) NOT NULL,
 		duracion INT NULL,
 		cupo_maximo INT NULL,
+		turno TIME NOT NULL,  
 		tipo VARCHAR(20) NOT NULL,
 		estado BIT NOT NULL CONSTRAINT DF_atraccion_estado DEFAULT(0),
 
@@ -211,7 +212,8 @@ BEGIN
 		),
 		CONSTRAINT CK_Atraccion_CupoPositivo CHECK(
 			cupo_maximo IS NULL OR cupo_maximo > 0
-		)
+		),
+		CONSTRAINT UQ_Atraccion_NombreParqueTurno UNIQUE(nombre, id_parque, turno)
 		-- se puede agregar un check para el tipo de atraccion (paga, gratuita, etc): definir tipos
 
 	);
@@ -226,6 +228,7 @@ BEGIN
 		id_ticket_atraccion INT IDENTITY(1,1) NOT NULL,
 		id_atraccion INT NOT NULL,
 		fecha DATETIME2(0) NOT NULL,
+		fecha_actividad DATE NOT NULL,
 		cantidad INT NOT NULL,
 		subtotal DECIMAL(12,2) NOT NULL,
 		estado BIT NOT NULL CONSTRAINT DF_TicketsAstraccion_estado DEFAULT(0),
