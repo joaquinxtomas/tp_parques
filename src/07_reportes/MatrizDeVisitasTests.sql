@@ -5,9 +5,9 @@
 USE ParquesNacionales;
 GO
 
--- CASO 1: año con datos -> debe devolver filas
+-- CASO 1: anio con datos -> debe devolver filas
 BEGIN TRY
-    EXEC reportes.GenerarMatrizVisitas @anio = 2024;
+    EXEC reportes.GenerarMatrizVisitas @anio = 2025;
     PRINT 'CASO 1 OK: matriz generada para 2024';
 END TRY
 BEGIN CATCH
@@ -15,7 +15,7 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 2: año sin datos -> debe devolver vacío (no error)
+-- CASO 2: anio sin datos -> debe devolver vacio (no error)
 BEGIN TRY
     EXEC reportes.GenerarMatrizVisitas @anio = 1995;
     PRINT 'CASO 2 OK: ejecuta sin error (resultado vacío esperado)';
@@ -25,7 +25,7 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 3: año inválido (NULL) -> RECHAZO
+-- CASO 3: anio invalido (NULL) -> RECHAZO
 BEGIN TRY
     EXEC reportes.GenerarMatrizVisitas @anio = NULL;
     PRINT 'CASO 3 FALLO: no debería haber ejecutado';
@@ -35,7 +35,7 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 4: año absurdo -> RECHAZO
+-- CASO 4: anio absurdo -> RECHAZO
 BEGIN TRY
     EXEC reportes.GenerarMatrizVisitas @anio = 1850;
     PRINT 'CASO 4 FALLO: no debería haber ejecutado';
