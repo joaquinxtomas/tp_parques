@@ -160,23 +160,23 @@ BEGIN
         SET nro_ticket = @id_parque * 1000000 + @id_entrada
         WHERE id_entrada = @id_entrada;
 
-        INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+        INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
         VALUES (@id_entrada, @id_tipo_1, @cantidad_1, @precio_1, @cantidad_1 * @precio_1);
 
         IF @id_tipo_2 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_2, @cantidad_2, @precio_2, @cantidad_2 * @precio_2);
 
         IF @id_tipo_3 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_3, @cantidad_3, @precio_3, @cantidad_3 * @precio_3);
 
         IF @id_tipo_4 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_4, @cantidad_4, @precio_4, @cantidad_4 * @precio_4);
 
         IF @id_tipo_5 IS NOT NULL
-            INSERT INTO ventas.TicketVisitante (id_ticket, id_tipo_visitante, cantidad, precio_unit, subtotal)
+            INSERT INTO ventas.TicketVisitante (id_entrada, id_tipo_visitante, cantidad, precio_unit, subtotal)
             VALUES (@id_entrada, @id_tipo_5, @cantidad_5, @precio_5, @cantidad_5 * @precio_5);
 
         COMMIT TRANSACTION;
@@ -212,7 +212,7 @@ GO
 
 
 -- Entrada_Nuevo
-
+/*
 -- CASO 28: parque inexistente → error
 BEGIN TRY
     DECLARE @id_res INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
@@ -341,7 +341,7 @@ GO
 -- CASO 37: baja correcta (primer ticket activo)
 BEGIN TRY
     DECLARE @id_tk INT = (SELECT MIN(id_entrada) FROM ventas.Entrada WHERE estado = 0);
-    EXEC ventas.Ticket_Eliminar @id_ticket = @id_tk;
+    EXEC ventas.Ticket_Eliminar @id_entrada = @id_tk;
     PRINT 'CASO 37 OK: ticket dado de baja';
 END TRY
 BEGIN CATCH
@@ -359,7 +359,7 @@ BEGIN CATCH
     PRINT 'CASO 38 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
-
+*/
 --====================================================================================
 --						LOGICAS DE NEGOCIO REGISTRO DE ACTIVIDADES
 --====================================================================================
@@ -369,30 +369,36 @@ GO
 
 CREATE OR ALTER PROCEDURE actividades.RegistrarTicketActividad
 	@id_atraccion INT,
-	@cantidad INT
+	@cantidad INT,
+	@fecha_actividad DATE
 AS
 BEGIN
 	SET NOCOUNT ON;
 	SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 
-	DECLARE @v_errores VARCHAR (MAX) = '';
+	DECLARE @v_errores VARCHAR (2000) = '';
 	DECLARE @v_costo DECIMAL (10,2);
 	DECLARE @v_cupo INT;
 	DECLARE @v_estado BIT;
 	DECLARE @v_existe BIT = 0;
+	DECLARE @v_turno TIME;
 	DECLARE @v_ocupado INT;
 	DECLARE @v_subtotal DECIMAL (12,2);
-	DECLARE @v_fecha DATETIME2(0)= SYSDATETIME();
-
+	DECLARE @v_fechaActual DATETIME2(0)= SYSDATETIME();
+	DECLARE @v_inicioActividad DATETIME2(0);
 BEGIN TRANSACTION
 BEGIN TRY
 	-- (a) cantidad positiva
     IF @cantidad IS NULL OR @cantidad <= 0
 		SET @v_errores += '- La cantidad debe ser mayor a cero.';
 
+	IF @fecha_actividad IS NULL
+		SET @v_errores += '- La fecha de la actividad es obligatoria. ';
+
 	SELECT @v_costo  = costo,
            @v_cupo   = cupo_maximo,
            @v_estado = estado,
+		   @v_turno  = turno,
            @v_existe = 1 -- me indica si encontro la atraccion 
 	FROM actividades.Atraccion WHERE id_atraccion = @id_atraccion;
 
@@ -401,17 +407,25 @@ BEGIN TRY
     ELSE IF @v_estado = 1
 		SET @v_errores += 'La atraccion esta dada de baja. ';
 
-	IF @v_existe = 1 AND @v_estado = 0 AND @cantidad > 0 AND @v_cupo IS NOT NULL 
+	IF @v_existe = 1 AND @v_estado = 0 AND @fecha_actividad IS NOT NULL  -- verifico si la actividad no comenzo ya
+	BEGIN
+		--armo una fecha y hora de inicio con la fecha de actividad y hora del turno
+		SET @v_inicioActividad = DATETIME2FROMPARTS(YEAR(@fecha_actividad), MONTH(@fecha_actividad), DAY(@fecha_actividad), DATEPART(HOUR, @v_turno), DATEPART(MINUTE, @v_turno), DATEPART(SECOND, @v_turno),0, 0);
+		IF @v_inicioActividad < @v_fechaActual
+			SET @v_errores += 'No se puede registrar: la actividad ya comenzo (' 
+				+ CONVERT(VARCHAR(16), @v_inicioActividad, 120) + '). ';
+	END
+
+	IF @v_existe = 1 AND @v_estado = 0 AND @cantidad > 0 AND @v_cupo IS NOT NULL AND @fecha_actividad IS NOT NULL
 	-- si existe el ticket, atraccion activa, cantidad valida y tiene cupo definido, chequeo cuantos cupos ya voy ocupados hoy
 	BEGIN -- CALCULO LA CANTIDAD DE CUPOS ACTUALMENTE PARA EL DIA DE HOY
 		SELECT @v_ocupado = ISNULL(SUM(cantidad), 0)
 		FROM   actividades.TicketsAtraccion
 		WHERE  id_atraccion = @id_atraccion
-		AND  fecha >= CAST(@v_fecha AS DATE) -- casteo la fecha solo como dia -- ej: 21/6/26 00:00 hs
-		AND  fecha <  DATEADD(DAY, 1, CAST(@v_fecha AS DATE))  -- casteo tmb como dia y le sumo 1 dia-- 22/6/26 00:00
+		AND  fecha_actividad = @fecha_actividad
 		AND  estado = 0;  
 		IF @v_ocupado + @cantidad > @v_cupo
-                SET @v_errores += 'Cupo insuficiente para la jornada. Disponible: '
+                SET @v_errores += 'Cupo insuficiente para el turno. Disponible: '
                     + CAST(@v_cupo - @v_ocupado AS VARCHAR(10))
                     + ', solicitado: ' + CAST(@cantidad AS VARCHAR(10)) + '. ';
    END
@@ -422,17 +436,15 @@ BEGIN TRY
        RETURN;
    END
        SET @v_subtotal = @cantidad * @v_costo;
-
-	   INSERT INTO actividades.TicketsAtraccion (id_atraccion, fecha, cantidad, subtotal)
-       VALUES (@id_atraccion, @v_fecha, @cantidad, @v_subtotal);
-
+	   INSERT INTO actividades.TicketsAtraccion (id_atraccion, fecha, fecha_actividad, cantidad, subtotal)
+       VALUES (@id_atraccion, @v_fechaActual, @fecha_actividad, @cantidad, @v_subtotal);  
 COMMIT TRANSACTION;
 END TRY
 BEGIN CATCH 
 	IF @@TRANCOUNT > 0
        ROLLBACK TRANSACTION;
 
-    DECLARE @v_msg VARCHAR(MAX) = ERROR_MESSAGE();
+    DECLARE @v_msg VARCHAR(2000) = ERROR_MESSAGE();
     DECLARE @v_sev INT          = ERROR_SEVERITY();
     DECLARE @v_est INT          = ERROR_STATE();
     RAISERROR(@v_msg, @v_sev, @v_est);
@@ -446,7 +458,7 @@ CREATE OR ALTER PROCEDURE actividades.CancelarTicketActividad
 AS
 BEGIN
 	SET NOCOUNT ON
-	DECLARE @v_errores VARCHAR(MAX) = '';
+	DECLARE @v_errores VARCHAR(2000) = '';
 
 	IF NOT EXISTS(SELECT 1 FROM actividades.TicketsAtraccion WHERE  id_ticket_atraccion = @id_ticketAtraccion )
 	SET @v_errores += 'No existe un ticket con ese ID'

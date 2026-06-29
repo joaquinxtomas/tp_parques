@@ -194,7 +194,7 @@ GO
 SELECT e.id_entrada, e.nro_ticket, e.fecha, e.forma_pago, e.total,
        tv.descripcion AS tipo_visitante, tv2.cantidad, tv2.precio_unit, tv2.subtotal
 FROM   ventas.Entrada e
-JOIN   ventas.TicketVisitante tv2 ON tv2.id_ticket = e.id_entrada
+JOIN   ventas.TicketVisitante tv2 ON tv2.id_entrada = e.id_entrada
 JOIN   ventas.TipoVisitante   tv  ON tv.id_tipo_visitante = tv2.id_tipo_visitante
 WHERE  e.estado = 0
 ORDER BY e.id_entrada, tv.descripcion;
@@ -203,188 +203,156 @@ GO
 --====================================================================================
 --					TEST LOGICA DE NEGOCIO REGISTRO DE ACTIVIDADES
 --====================================================================================
-
-EXEC parques.InsertarTipoDeParque @descripcion = 'Tipo Test Tickets'; -- creo un tipo de parque de prueba
+-- ------------------------------------------------------------
+-- PRECONDICIONES: parque + atracciones de prueba (con turno)
+-- ------------------------------------------------------------
+BEGIN TRY EXEC parques.InsertarTipoDeParque 'Tipo Test Tickets'; END TRY BEGIN CATCH PRINT 'tipo: '+ERROR_MESSAGE(); END CATCH
+GO
+DECLARE @id_tipo INT = (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion='Tipo Test Tickets');
+IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre='Parque Test Tickets')
+    EXEC parques.InsertarParque @nombre='Parque Test Tickets', @id_tipo_parque=@id_tipo;
 GO
 
-DECLARE @id_tipo INT = (SELECT id_tipo_parque FROM parques.TipoParque
-                        WHERE descripcion = 'Tipo Test Tickets');
+DECLARE @idp INT = (SELECT id_parque FROM parques.Parque WHERE nombre='Parque Test Tickets');
 
-IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Test Tickets') -- creo un parque de preuba 
-    EXEC parques.InsertarParque
-        @nombre = 'Parque Test Tickets',
-        @id_tipo_parque = @id_tipo;
+-- atraccion con cupo 10, turno 09:00
+BEGIN TRY EXEC actividades.InsertarAtraccion @id_parque=@idp, @nombre='TEST_Cupo10',
+    @costo=1000, @duracion=60, @cupo_maximo=10, @tipo='paga', @turno='09:00'; END TRY
+BEGIN CATCH PRINT 'pre Cupo10: '+ERROR_MESSAGE(); END CATCH
+-- atraccion dada de baja
+BEGIN TRY EXEC actividades.InsertarAtraccion @id_parque=@idp, @nombre='TEST_DeBaja',
+    @costo=500, @duracion=30, @cupo_maximo=20, @tipo='paga', @turno='10:00'; END TRY
+BEGIN CATCH PRINT 'pre DeBaja: '+ERROR_MESSAGE(); END CATCH
+-- atraccion sin limite de cupo
+BEGIN TRY EXEC actividades.InsertarAtraccion @id_parque=@idp, @nombre='TEST_SinLimite',
+    @costo=0, @duracion=NULL, @cupo_maximo=NULL, @tipo='gratuita', @turno='11:00'; END TRY
+BEGIN CATCH PRINT 'pre SinLimite: '+ERROR_MESSAGE(); END CATCH
 GO
 
-DECLARE @id_parque INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Test Tickets'); -- almaceno el id del parque
+select * from actividades.Atraccion
 
-IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10')
-    INSERT INTO actividades.Atraccion (id_parque, nombre, costo, duracion, cupo_maximo, tipo)
-    VALUES (@id_parque, 'TEST_Cupo10', 1000.00, 60, 10, 'paga');
-
-IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_DeBaja')
-    INSERT INTO actividades.Atraccion (id_parque, nombre, costo, duracion, cupo_maximo, tipo, estado)
-    VALUES (@id_parque, 'TEST_DeBaja', 500.00, 30, 20, 'paga', 1);
-
-IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_SinLimite')
-    INSERT INTO actividades.Atraccion (id_parque, nombre, costo, duracion, cupo_maximo, tipo)
-    VALUES (@id_parque, 'TEST_SinLimite', 0.00, NULL, NULL, 'gratuita');
-
-
+-- doy de baja la atraccion TEST_DeBaja para el caso 6
+DECLARE @idBaja INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_DeBaja');
+EXEC actividades.EliminarAtraccion @id_atraccion = @idBaja;   -- ajustá el nombre si tu SP de baja se llama distinto
+GO
 
 PRINT 'Precondiciones cargadas.';
 GO
 
-SELECT * FROM actividades.Atraccion;
+-- Fecha futura fija para los casos de cupo (no se vence)
+DECLARE @fut DATE = '2026-12-15';
+
 -- ============================================================
--- CASO 1: Contratacion valida (4 sobre cupo 10) -> OK
+-- CASO 1: contratacion valida (4 sobre cupo 10) -> OK
 -- ============================================================
 BEGIN TRY
-    DECLARE @a1 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a1, @cantidad = 4;
+    DECLARE @a1 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a1, @cantidad=4, @fecha_actividad='2026-12-15';
     PRINT 'CASO 1 OK: registro insertado (4 de 10)';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 1 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
+END TRY BEGIN CATCH PRINT 'CASO 1 ERROR inesperado: '+ERROR_MESSAGE(); END CATCH
 GO
+
 -- ============================================================
--- CASO 2: Completar cupo justo (6 mas, total 10 de 10) -> OK
+-- CASO 2: completar cupo justo (6 mas, mismo dia -> 10 de 10) -> OK
 -- ============================================================
 BEGIN TRY
-    DECLARE @a2 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a2, @cantidad = 6;
+    DECLARE @a2 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a2, @cantidad=6, @fecha_actividad='2026-12-15';
     PRINT 'CASO 2 OK: cupo completado justo (10 de 10)';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 2 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
+END TRY BEGIN CATCH PRINT 'CASO 2 ERROR inesperado: '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 3: Pasarse del cupo (1 mas con 10 de 10) -> RECHAZO
+-- CASO 3: pasarse del cupo (1 mas, mismo dia con 10/10) -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    DECLARE @a3 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a3, @cantidad = 1;
+    DECLARE @a3 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a3, @cantidad=1, @fecha_actividad='2026-12-15';
     PRINT 'CASO 3 FALLO: no deberia haber registrado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 3 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+END TRY BEGIN CATCH PRINT 'CASO 3 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 4: Atraccion inexistente -> RECHAZO
+-- CASO 3b: mismo cupo pero OTRO dia -> OK (el cupo es por turno/dia)
 -- ============================================================
 BEGIN TRY
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = 999999, @cantidad = 2;
-    PRINT 'CASO 4 FALLO: no deberia haber registrado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 4 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+    DECLARE @a3b INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a3b, @cantidad=8, @fecha_actividad='2026-12-16';
+    PRINT 'CASO 3b OK: otro dia tiene su propio cupo';
+END TRY BEGIN CATCH PRINT 'CASO 3b ERROR inesperado: '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 5: Cantidad invalida (cero) -> RECHAZO
+-- CASO 4: atraccion inexistente -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    DECLARE @a5 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a5, @cantidad = 0;
-    PRINT 'CASO 5 FALLO: no deberia haber registrado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 5 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=999999, @cantidad=2, @fecha_actividad='2026-12-15';
+    PRINT 'CASO 4 FALLO';
+END TRY BEGIN CATCH PRINT 'CASO 4 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 6: Atraccion dada de baja -> RECHAZO
+-- CASO 5: cantidad invalida (cero) -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    DECLARE @a6 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_DeBaja');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a6, @cantidad = 2;
-    PRINT 'CASO 6 FALLO: no deberia haber registrado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 6 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+    DECLARE @a5 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a5, @cantidad=0, @fecha_actividad='2026-12-15';
+    PRINT 'CASO 5 FALLO';
+END TRY BEGIN CATCH PRINT 'CASO 5 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 7: Atraccion con cupo NULL (sin limite) -> OK
+-- CASO 6: atraccion dada de baja -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    DECLARE @a7 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_SinLimite');
-    EXEC actividades.RegistrarTicketActividad @id_atraccion = @a7, @cantidad = 9999;
+    DECLARE @a6 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_DeBaja');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a6, @cantidad=2, @fecha_actividad='2026-12-15';
+    PRINT 'CASO 6 FALLO';
+END TRY BEGIN CATCH PRINT 'CASO 6 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
+GO
+
+-- ============================================================
+-- CASO 7: cupo NULL (sin limite) -> OK
+-- ============================================================
+BEGIN TRY
+    DECLARE @a7 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_SinLimite');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a7, @cantidad=9999, @fecha_actividad='2026-12-15';
     PRINT 'CASO 7 OK: registrado sin limite de cupo';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 7 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
-GO
-
-select * from actividades.TicketsAtraccion
-
--- Verificacion intermedia: registros de la atraccion con cupo 10
-SELECT id_ticket_atraccion, id_atraccion, fecha, cantidad, subtotal, estado
-FROM   actividades.TicketsAtraccion
-WHERE  id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10')
-ORDER BY id_ticket_atraccion;
+END TRY BEGIN CATCH PRINT 'CASO 7 ERROR inesperado: '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 8: Cancelar un registro existente -> OK
+-- CASO 8 (NUEVO): actividad ya comenzo (fecha pasada) -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    DECLARE @tk INT = (
-        SELECT MIN(id_ticket_atraccion) FROM actividades.TicketsAtraccion
-        WHERE id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10')
-          AND estado = 0
-    );
-    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion = @tk;
-    PRINT 'CASO 8 OK: registro cancelado (estado = 1)';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 8 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
+    DECLARE @a8 INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10');
+    EXEC actividades.RegistrarTicketActividad @id_atraccion=@a8, @cantidad=2, @fecha_actividad='2020-01-01';
+    PRINT 'CASO 8 FALLO: no deberia registrar una actividad pasada';
+END TRY BEGIN CATCH PRINT 'CASO 8 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 9: Cancelar un registro ya dado de baja -> RECHAZO
+-- CASO 9: cancelar un registro existente -> OK
 -- ============================================================
 BEGIN TRY
-    DECLARE @tk2 INT = (
-        SELECT MIN(id_ticket_atraccion) FROM actividades.TicketsAtraccion
-        WHERE id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Cupo10')
-          AND estado = 1
-    );
-    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion = @tk2;
-    PRINT 'CASO 9 FALLO: no deberia haber cancelado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 9 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+    DECLARE @tk INT = (SELECT MIN(id_ticket_atraccion) FROM actividades.TicketsAtraccion
+        WHERE id_atraccion=(SELECT id_atraccion FROM actividades.Atraccion WHERE nombre='TEST_Cupo10') AND estado=0);
+    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion=@tk;
+    PRINT 'CASO 9 OK: registro cancelado';
+END TRY BEGIN CATCH PRINT 'CASO 9 ERROR inesperado: '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- ============================================================
--- CASO 10: Cancelar un registro inexistente -> RECHAZO
+-- CASO 10: cancelar inexistente -> RECHAZO
 -- ============================================================
 BEGIN TRY
-    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion = 999999;
-    PRINT 'CASO 10 FALLO: no deberia haber cancelado';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 10 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
+    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion=999999;
+    PRINT 'CASO 10 FALLO';
+END TRY BEGIN CATCH PRINT 'CASO 10 OK (rechazo esperado): '+ERROR_MESSAGE(); END CATCH
 GO
 
 -- Verificacion final
-SELECT id_ticket_atraccion, id_atraccion, cantidad, subtotal, estado
+SELECT id_ticket_atraccion, id_atraccion, fecha, fecha_actividad, cantidad, subtotal, estado
 FROM   actividades.TicketsAtraccion
-WHERE  id_atraccion IN (
-        SELECT id_atraccion FROM actividades.Atraccion
-        WHERE nombre IN ('TEST_Cupo10', 'TEST_SinLimite'))
-ORDER BY id_ticket_atraccion;
+ORDER BY id_atraccion, fecha_actividad, id_ticket_atraccion;
 GO
