@@ -42,8 +42,19 @@ BEGIN
     DECLARE @errores INT = 0;
     DECLARE @detalle VARCHAR(500) = '';
 
-    DECLARE @id_tipo_residente INT;
+    DECLARE @pct_adulto DECIMAL(4,2) = 0.60;
+    DECLARE @pct_jubilado DECIMAL(4,2) = 0.20;
+    DECLARE @pct_estudiante DECIMAL(4,2) = 0.15;
+
+    DECLARE @id_tipo_adulto INT;
+    DECLARE @id_tipo_jubilado INT;
+    DECLARE @id_tipo_estudiante INT;
+    DECLARE @id_tipo_discapacitado INT;
     DECLARE @id_tipo_no_residente INT;
+
+    --DECLARE @id_tipo_residente INT;
+    --DECLARE @id_tipo_no_residente INT;
+    
     DECLARE @tamanio_grupo INT = 100;
     DECLARE @tipo_archivo VARCHAR(50) = 'YVERA_VISITAS';
 
@@ -54,14 +65,19 @@ BEGIN
     SET @id_log = SCOPE_IDENTITY();
 
     -- OBTENER IDS TIPO VISITANTE (RESIDENTE Y NO RESIDENTE SON LOS UNICOS QUE VIENEN EN EL ARCHIVO)
+    SELECT @id_tipo_adulto = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Adulto';
+    SELECT @id_tipo_jubilado = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado';
+    SELECT @id_tipo_estudiante = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Estudiante';
+    SELECT @id_tipo_discapacitado = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Discapacitado';
 
-    SELECT @id_tipo_residente = id_tipo_visitante
-    FROM ventas.TipoVisitante WHERE descripcion = 'Residente';
+    --SELECT @id_tipo_residente = id_tipo_visitante
+    --FROM ventas.TipoVisitante WHERE descripcion = 'Residente';
 
     SELECT @id_tipo_no_residente = id_tipo_visitante
     FROM ventas.TipoVisitante WHERE descripcion = 'No residente';
 
-    IF @id_tipo_residente IS NULL OR @id_tipo_no_residente IS NULL
+    IF @id_tipo_adulto IS NULL OR @id_tipo_jubilado IS NULL OR @id_tipo_estudiante IS NULL OR @id_tipo_discapacitado IS NULL
+        OR @id_tipo_no_residente IS NULL
     BEGIN
         UPDATE importacion.LogImportacion
         SET detalle = 'Faltan tipos de visitante (TipoVisitante)', errores = 1
@@ -177,6 +193,49 @@ BEGIN
             AND e.origen = 'IMPORTADO'
       );
 
+    -- REPARTE RESIDENTES EN DIFERENTES TIPOS DE VISITANTE
+    CREATE TABLE #cantidades (
+        id_parque INT,
+        fecha DATE,
+        id_tipo_visitante INT,
+        cantidad INT
+    );
+
+    INSERT INTO #cantidades(id_parque, fecha, id_tipo_visitante, cantidad)
+    SELECT v.id_parque, v.fecha, @id_tipo_adulto, FLOOR(v.residentes * @pct_adulto)
+    FROM #validos v
+    WHERE v.residentes > 0
+
+    UNION ALL 
+
+    SELECT v.id_parque, v.fecha, @id_tipo_jubilado, FLOOR(v.residentes * @pct_jubilado)
+    FROM #validos v
+    WHERE v.residentes > 0
+
+    UNION ALL 
+
+    SELECT v.id_parque, v.fecha, @id_tipo_estudiante, FLOOR(v.residentes * @pct_estudiante)
+    FROM #validos v
+    WHERE v.residentes > 0
+
+    UNION ALL 
+
+    --tipo visitante discapacitado absorve los restos de otros
+    SELECT 
+        v.id_parque, v.fecha, @id_tipo_discapacitado, v.residentes
+        - FLOOR(v.residentes * @pct_adulto) 
+        - FLOOR(v.residentes * @pct_jubilado)
+        - FLOOR(v.residentes * @pct_estudiante)
+    FROM #validos v
+    WHERE v.residentes > 0
+
+    UNION ALL 
+    
+    SELECT v.id_parque, v.fecha, @id_tipo_no_residente, v.no_residentes
+    FROM #validos v
+    WHERE v.no_residentes > 0;
+
+
     -- GENERAR GRUPOS
     CREATE TABLE #nums (n INT PRIMARY KEY);
     INSERT INTO #nums (n)
@@ -191,7 +250,7 @@ BEGIN
         cantidad          INT
     );
 
-    -- grupos de residentes
+    /*-- grupos de residentes
     INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad)
     SELECT
         v.id_parque,
@@ -219,7 +278,21 @@ BEGIN
     FROM #validos v
     INNER JOIN #nums n
         ON n.n <= CEILING(CAST(v.no_residentes AS DECIMAL) / @tamanio_grupo)
-    WHERE v.no_residentes > 0;
+    WHERE v.no_residentes > 0;*/
+
+    INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad)
+    SELECT
+        c.id_parque,
+        c.fecha,
+        c.id_tipo_visitante,
+        CASE 
+            WHEN n.n * @tamanio_grupo <= c.cantidad THEN @tamanio_grupo
+            ELSE c.cantidad - ((n.n - 1) * @tamanio_grupo)
+        END
+    FROM #cantidades c
+    INNER JOIN #nums n
+        ON n.n <= CEILING(CAST(c.cantidad AS DECIMAL) / @tamanio_grupo)
+    WHERE c.cantidad > 0;
 
     -- INSERTAR ENTRADAS Y TICKETS
     BEGIN TRY
@@ -254,13 +327,28 @@ BEGIN
             e.id_entrada,
             g.id_tipo_visitante,
             g.cantidad,
-            0,
-            0
+            COALESCE(pe.precio, 0),
+            g.cantidad * COALESCE(pe.precio, 0)
         FROM #grupos g
         INNER JOIN ventas.Entrada e
             ON e.nro_ticket = -g.orden
            AND e.pto_venta = 0
-           AND e.origen = 'IMPORTADO';
+           AND e.origen = 'IMPORTADO'
+        LEFT JOIN ventas.PrecioEntrada pe
+            ON pe.id_parque = e.id_parque
+        AND pe.id_tipo_visitante = g.id_tipo_visitante
+        AND pe.fecha_inicio <= e.fecha
+        AND (pe.fecha_fin IS NULL OR pe.fecha_fin >= e.fecha)
+        AND pe.estado = 0;
+
+        UPDATE ventas.Entrada
+        SET total = (
+            SELECT SUM(tv.subtotal) 
+            FROM ventas.TicketVisitante tv 
+            WHERE tv.id_entrada = ventas.Entrada.id_entrada
+        )
+        WHERE origen = 'IMPORTADO'
+          AND pto_venta = 0;
 
         SET @tickets_insertados = @@ROWCOUNT;
 
@@ -269,8 +357,7 @@ BEGIN
         SET nro_ticket = id_entrada
         WHERE pto_venta = 0
           AND origen = 'IMPORTADO'
-          AND nro_ticket < 0;
-
+          AND nro_ticket < 0
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
