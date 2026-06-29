@@ -3,7 +3,14 @@
 USE ParquesNacionales;
 GO
 
---              Concesiones
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - CONCESIONES                                          ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '                 TESTS - CONCESIONES               ';
+PRINT '═══════════════════════════════════════════════════';
+
 
 -- PRECONDICIONES
 
@@ -26,7 +33,10 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Nahuel Huapi')
 GO
 
 
--- Empresa_Nueva
+-- ─── Empresa_Nueva ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Empresa_Nueva ───────────────────────────────';
 
 -- CASO 1: razon_social vacía → error
 BEGIN TRY
@@ -98,7 +108,10 @@ SELECT id_empresa, razon_social, cuit, estado FROM concesiones.Empresa;
 GO
 
 
--- Empresa_Modificar
+-- ─── Empresa_Modificar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Empresa_Modificar ───────────────────────────────';
 
 -- CASO 6: empresa inexistente → error
 BEGIN TRY
@@ -144,9 +157,10 @@ END CATCH
 GO
 
 
--- ============================================================
--- Empresa_Eliminar
--- ============================================================
+-- ─── Empresa_Eliminar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Empresa_Eliminar ───────────────────────────────';
 
 -- CASO 10: empresa inexistente → error
 BEGIN TRY
@@ -181,9 +195,10 @@ END CATCH
 GO
 
 
--- ============================================================
--- Concesion_Nueva
--- ============================================================
+-- ─── Concesion_Nueva ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Concesion_Nueva ───────────────────────────────';
 
 -- CASO 13: empresa inactiva → error
 BEGIN TRY
@@ -287,7 +302,10 @@ END CATCH
 GO
 
 
--- Concesion_Modificar
+-- ─── Concesion_Modificar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Concesion_Modificar ───────────────────────────────';
 
 -- CASO 20: concesion inexistente → error
 BEGIN TRY
@@ -333,7 +351,10 @@ END CATCH
 GO
 
 
--- Concesion_Eliminar
+-- ─── Concesion_Eliminar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── Concesion_Eliminar ───────────────────────────────';
 
 -- CASO 24: concesion inexistente → error
 BEGIN TRY
@@ -368,7 +389,10 @@ END CATCH
 GO
 
 
--- PagoConcesion_Nuevo
+-- ─── PagoConcesion_Nuevo ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PagoConcesion_Nuevo ───────────────────────────────';
 
 -- CASO 27: concesion inactiva → error
 BEGIN TRY
@@ -427,7 +451,10 @@ END CATCH
 GO
 
 
--- PagoConcesion_Modificar
+-- ─── PagoConcesion_Modificar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PagoConcesion_Modificar ───────────────────────────────';
 
 -- CASO 32: pago inexistente → error
 BEGIN TRY
@@ -462,7 +489,10 @@ END CATCH
 GO
 
 
--- PagoConcesion_Eliminar
+-- ─── PagoConcesion_Eliminar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PagoConcesion_Eliminar ───────────────────────────────';
 
 -- CASO 35: pago inexistente → error
 BEGIN TRY
@@ -497,7 +527,13 @@ END CATCH
 GO
 
 
--- Ventas
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - VENTAS                                               ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '                 TESTS - VENTAS                    ';
+PRINT '═══════════════════════════════════════════════════';
 
 -- PRECONDICIONES
 
@@ -520,7 +556,10 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Nahuel Huapi')
 GO
 
 
--- TipoVisitante_Nuevo
+-- ─── TipoVisitante_Nuevo ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── TipoVisitante_Nuevo ───────────────────────────────';
 
 -- CASO 1: descripcion NULL → error
 BEGIN TRY
@@ -582,7 +621,10 @@ SELECT id_tipo_visitante, descripcion, estado FROM ventas.TipoVisitante;
 GO
 
 
--- TipoVisitante_Modificar
+-- ─── TipoVisitante_Modificar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── TipoVisitante_Modificar ───────────────────────────────';
 
 -- CASO 5: ID inexistente → error
 BEGIN TRY
@@ -628,7 +670,10 @@ END CATCH
 GO
 
 
--- TipoVisitante_Eliminar
+-- ─── TipoVisitante_Eliminar ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── TipoVisitante_Eliminar ───────────────────────────────';
 
 -- CASO 9: ID inexistente → error
 BEGIN TRY
@@ -674,7 +719,10 @@ END CATCH
 GO
 
 
--- PrecioEntrada_Nuevo_Normal
+-- ─── PrecioEntrada_Nuevo_Normal ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PrecioEntrada_Nuevo_Normal ───────────────────────────────';
 
 -- CASO 13: parque inexistente → error
 BEGIN TRY
@@ -745,7 +793,10 @@ END CATCH
 GO
 
 
--- PrecioEntrada_Nuevo_Temporada
+-- ─── PrecioEntrada_Nuevo_Temporada ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PrecioEntrada_Nuevo_Temporada ───────────────────────────────';
 
 -- CASO 18: fecha_fin < fecha_inicio → error
 BEGIN TRY
@@ -797,7 +848,10 @@ END CATCH
 GO
 
 
--- PrecioEntrada_Modificar_Precio
+-- ─── PrecioEntrada_Modificar_Precio ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── PrecioEntrada_Modificar_Precio ───────────────────────────────';
 
 -- CASO 21: id_precio inexistente → error
 BEGIN TRY
@@ -897,9 +951,18 @@ SELECT id_precio, id_parque, id_tipo_visitante, precio, fecha_inicio, fecha_fin,
 FROM ventas.PrecioEntrada ORDER BY id_precio;
 GO
 
---====================================================================================
---								TEST ABM TIPOS DE PARQUES
---====================================================================================
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - TIPO DE PARQUES                                      ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '               TESTS - TIPO DE PARQUES             ';
+PRINT '═══════════════════════════════════════════════════';
+
+-- ─── InsertarTipoDeParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── InsertarTipoDeParque ───────────────────────────────';
 
 -- CASO 1: Alta correcta
 -- Esperado: inserta sin error
@@ -936,6 +999,11 @@ BEGIN CATCH
 END CATCH
 GO
 
+-- ─── ModificarTipoDeParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── ModificarTipoDeParque ───────────────────────────────';
+
 -- CASO 4: Modificacion correcta
 -- Esperado: actualiza la descripcion
 BEGIN TRY
@@ -959,6 +1027,11 @@ BEGIN CATCH
     PRINT 'CASO 5 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
+
+-- ─── EliminarTipoDeParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── EliminarTipoDeParque ───────────────────────────────';
 
 -- CASO 6: Baja logica de un tipo de parque
 -- Esperado: marca estado = 1 (no borra fisicamente)
@@ -984,9 +1057,14 @@ BEGIN CATCH
 END CATCH
 GO
 
---====================================================================================
---								TEST ABM PARQUES
---====================================================================================
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - PARQUES                                              ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '                 TESTS - PARQUES                   ';
+PRINT '═══════════════════════════════════════════════════';
+
 
 -- PRECONDICIONES: tipos de parque necesarios para las pruebas
 BEGIN TRY
@@ -1003,6 +1081,12 @@ BEGIN CATCH
 	PRINT 'Precondicion 2: ' + ERROR_MESSAGE(); 
 END CATCH
 GO
+
+
+-- ─── InsertarParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── InsertarParque ───────────────────────────────';
 
 -- CASO 1: Alta correcta con coordenadas
 -- Esperado: inserta sin error
@@ -1080,6 +1164,11 @@ BEGIN CATCH
 END CATCH
 GO
 
+-- ─── ModificarParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── ModificarParque ───────────────────────────────';
+
 -- CASO 7: Modificacion correcta
 -- Esperado: actualiza el parque
 BEGIN TRY
@@ -1106,6 +1195,11 @@ BEGIN CATCH
     PRINT 'CASO 8 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
+
+-- ─── EliminarParque ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── EliminarParque ───────────────────────────────';
 
 -- CASO 9: Baja logica de un parque sin dependencias
 -- Esperado: marca estado = 1 (no borra fisicamente)
@@ -1142,11 +1236,22 @@ BEGIN CATCH
 END CATCH
 GO
 
---              ACTIVIDADES
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - ACTIVIDADES                                          ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '                 TESTS - ACTIVIDADES               ';
+PRINT '═══════════════════════════════════════════════════';
 
 -- PRECONDICIONES
-
-EXEC parques.InsertarTipoDeParque 'Parque Nacional';
+BEGIN TRY
+    EXEC parques.InsertarTipoDeParque 'Parque Nacional';
+END TRY
+BEGIN CATCH
+    PRINT 'Precondicion tipo parque: ' + ERROR_MESSAGE();
+END CATCH
+GO
 
 IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu')
     INSERT INTO parques.Parque (nombre, id_tipo_parque, region)
@@ -1160,6 +1265,11 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Nahu
             (SELECT id_tipo_parque FROM parques.TipoParque WHERE descripcion = 'Parque Nacional'),
             'Cuyo');
 GO
+
+-- ─── InsertarAtraccion ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── InsertarAtraccion ───────────────────────────────';
 
 -- CASO 1: inserción normal
 BEGIN TRY
@@ -1246,11 +1356,10 @@ INNER JOIN parques.Parque p ON p.id_parque = a.id_parque
 ORDER BY a.id_atraccion;
 GO
 
--- ActualizarAtraccion
+-- ─── ActualizarAtraccion ────────────────────────────────────────────
 
--- limpieza
-DELETE FROM actividades.Atraccion WHERE nombre LIKE 'TEST_%';
-GO
+PRINT '';
+PRINT '─── ActualizarAtraccion ───────────────────────────────';
 
 -- prerequisitos
 BEGIN TRY
@@ -1345,7 +1454,10 @@ BEGIN CATCH
 END CATCH
 GO
 
--- EliminarAtraccion
+-- ─── EliminarAtraccion ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── EliminarAtraccion ───────────────────────────────';
 
 -- CASO 13: baja correcta
 BEGIN TRY
@@ -1386,12 +1498,17 @@ WHERE nombre LIKE 'TEST_%'
 ORDER BY id_atraccion;
 GO
 
---              TOUR GUIA
+-- ╔═══════════════════════════════════════════════════════════════╗
+-- ║  TESTS - TOURGUIA                                             ║
+-- ╚═══════════════════════════════════════════════════════════════╝
+
+PRINT '═══════════════════════════════════════════════════';
+PRINT '                 TESTS - TOURGUIA                  ';
+PRINT '═══════════════════════════════════════════════════';
 
 -- PRECONDICIONES
 
-PRINT('--------- TESTS TOUR GUIA ----------');
-
+-- PRECONDICIONES
 DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
 
 IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '11111111')
@@ -1402,11 +1519,23 @@ IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '22222222')
     INSERT INTO personal.GuiaAutorizado (nombre, dni, especialidad, titulo, vigencia_desde)
     VALUES ('Guia Test 2', '22222222', 'Fauna', NULL, '2024-01-01');
 
+-- limpiar asignaciones previas de la atracción de test
+DELETE FROM actividades.TourGuia 
+WHERE id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+
+-- si existe pero está dada de baja, reactivarla
+IF EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND estado = 1)
+    UPDATE actividades.Atraccion SET estado = 0 WHERE nombre = 'TEST_Tour_Selva';
+
+-- si no existe, crearla
 IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva')
     EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo';
 GO
 
--- InsertarTourGuia
+-- ─── InsertarTourGuia ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── InsertarTourGuia ───────────────────────────────';
 
 -- CASO 1: asignar guía a atracción
 BEGIN TRY
@@ -1485,7 +1614,10 @@ WHERE a.nombre = 'TEST_Tour_Selva';
 GO
 
 
--- EliminarTourGuia
+-- ─── EliminarTourGuia ────────────────────────────────────────────
+
+PRINT '';
+PRINT '─── EliminarTourGuia ───────────────────────────────';
 
 -- CASO 7: baja válida
 BEGIN TRY
