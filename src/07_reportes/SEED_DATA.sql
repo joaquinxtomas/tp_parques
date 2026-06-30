@@ -179,17 +179,145 @@ CROSS JOIN (
     VALUES
         ('Senderismo',             0.00,   120, NULL, 'Aventura',    CAST('09:00' AS TIME)),
         ('Avistaje de aves',       0.00,    90, NULL, 'Naturaleza',  CAST('09:00' AS TIME)),  -- mismo horario
-
         ('Safari fotográfico',  1500.00,  180, 15, 'Fotografía',  CAST('10:30' AS TIME)),
         ('Caminata guiada',      800.00,  120, 25, 'Senderismo',  CAST('12:00' AS TIME)),
         ('Recorrido histórico',  500.00,   60, 40, 'Cultural',    CAST('14:00' AS TIME)),
         ('Paseo en bicicleta',  1000.00,  120, 15, 'Deportivo',   CAST('15:30' AS TIME)),
         ('Charla educativa',       0.00,   45, NULL, 'Educativa',   CAST('16:30' AS TIME)),
         ('Picnic guiado',        300.00,   90, 35, 'Recreativa',  CAST('18:00' AS TIME)),
-
         ('Observación nocturna',1200.00,  150, 20, 'Naturaleza',  CAST('20:00' AS TIME)),
         ('Observación de flora',   0.00,   75, NULL, 'Naturaleza',  CAST('20:00' AS TIME))   -- mismo horario
 ) AS a(nombre, costo, duracion, cupo_maximo, tipo, turno)
 WHERE p.estado = 0;
 
 select * from actividades.Atraccion
+--======================================================
+--				ALTA DE GUIAS
+--======================================================
+
+-- Seed: 20 guías autorizados via personal.guiaAutorizado_alta
+EXEC personal.guiaAutorizado_alta 'Martín Acuña',        '28456789', 'Trekking de montaña',      'Guía de Montaña UNComahue',        '2022-03-01', '2026-03-01';
+EXEC personal.guiaAutorizado_alta 'Lucía Ferreyra',      '30112233', 'Observación de aves',       'Licenciada en Biología',           '2021-06-15', '2025-06-15';
+EXEC personal.guiaAutorizado_alta 'Diego Sosa',          '27889900', 'Espeleología',              'Técnico en Turismo',               '2023-01-10', '2027-01-10';
+EXEC personal.guiaAutorizado_alta 'Carla Méndez',        '32556677', 'Interpretación ambiental',  'Guía de Naturaleza',               '2020-09-01', '2024-09-01';
+EXEC personal.guiaAutorizado_alta 'Federico Ramírez',    '29334455', 'Kayak y rafting',           NULL,                               '2022-11-20', '2026-11-20';
+EXEC personal.guiaAutorizado_alta 'Sofía Domínguez',     '31778899', 'Flora patagónica',          'Ingeniera Forestal',               '2021-02-05', '2025-02-05';
+EXEC personal.guiaAutorizado_alta 'Joaquín Vega',        '26445566', 'Alta montaña',              'Guía de Alta Montaña AAGM',        '2019-07-12', '2024-07-12';
+EXEC personal.guiaAutorizado_alta 'Valentina Rojas',     '33667788', 'Senderismo familiar',       NULL,                               '2023-05-01', '2027-05-01';
+EXEC personal.guiaAutorizado_alta 'Tomás Herrera',       '28990011', 'Cabalgatas',                'Técnico en Turismo Rural',         '2020-04-18', '2024-04-18';
+EXEC personal.guiaAutorizado_alta 'Agustina Paredes',    '34112244', 'Fotografía de naturaleza',  'Guía de Naturaleza',               '2022-08-09', '2026-08-09';
+
+EXEC personal.guiaAutorizado_alta 'Nicolás Castro',      '27556688', 'Glaciología',               'Licenciado en Geología',           '2021-10-30', '2025-10-30';
+EXEC personal.guiaAutorizado_alta 'Florencia Aguirre',   '32889900', 'Educación ambiental',       'Profesora de Cs. Naturales',       '2023-03-22', '2027-03-22';
+EXEC personal.guiaAutorizado_alta 'Mateo Giménez',       '29001122', 'Buceo en lagos',            'Guía de Buceo',                    '2020-12-01', '2024-12-01';
+EXEC personal.guiaAutorizado_alta 'Camila Núñez',        '33445599', 'Observación de fauna',      'Licenciada en Cs. Biológicas',     '2022-06-14', '2026-06-14';
+EXEC personal.guiaAutorizado_alta 'Lautaro Medina',      '28334477', 'Montañismo invernal',       'Guía de Montaña',                  '2021-01-08', '2025-01-08';
+EXEC personal.guiaAutorizado_alta 'Julieta Romero',      '34556600', 'Botánica nativa',           NULL,                               '2023-09-15', '2027-09-15';
+EXEC personal.guiaAutorizado_alta 'Bruno Ortiz',         '27778822', 'Trekking glaciar',          'Guía de Hielo',                    '2020-05-25', '2024-05-25';
+EXEC personal.guiaAutorizado_alta 'Antonella Silva',     '32112255', 'Avistaje de ballenas',      'Técnica en Turismo',               '2022-02-11', '2026-02-11';
+EXEC personal.guiaAutorizado_alta 'Ramiro Fernández',    '29667733', 'Escalada en roca',          'Guía de Escalada',                 '2021-08-03', '2025-08-03';
+EXEC personal.guiaAutorizado_alta 'Micaela Torres',      '33990044', 'Interpretación geológica',  'Licenciada en Geología',           '2023-07-19', '2027-07-19';
+GO
+select * from personal.GuiaAutorizado
+select * from actividades.TourGuia
+--======================================================
+--				ASIGNACION DE GUIAS
+--======================================================
+-- Resuelve id_atraccion por nombre+parque+turno; id_guia por dni.
+
+DECLARE @g_sosa    INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='27889900'); -- Espeleología, 2027
+DECLARE @g_rojas   INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='33667788'); -- Senderismo, 2027
+DECLARE @g_paredes INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='34112244'); -- Fotografía, 2026-08
+DECLARE @g_aguirre INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='32889900'); -- Educación, 2027
+DECLARE @g_romero  INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='34556600'); -- Botánica, 2027
+DECLARE @g_torres  INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni='33990044'); -- Geología, 2027
+
+DECLARE @p_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre='Iguazú');
+DECLARE @p_lanin  INT = (SELECT id_parque FROM parques.Parque WHERE nombre='Lanín');
+DECLARE @p_sierra INT = (SELECT id_parque FROM parques.Parque WHERE nombre='Sierra Verde');
+
+DECLARE @a INT;
+
+-- Safari fotográfico @ Iguazú 10:30 -> Paredes (fotografía, 2026-08)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_iguazu AND nombre='Safari fotográfico' AND turno='10:30');
+EXEC actividades.InsertarTourGuia @a, @g_paredes;
+
+-- Caminata guiada @ Iguazú 12:00 -> Rojas (senderismo, 2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_iguazu AND nombre='Caminata guiada' AND turno='12:00');
+EXEC actividades.InsertarTourGuia @a, @g_rojas;
+
+-- Recorrido histórico @ Iguazú 14:00 -> Aguirre (educación, 2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_iguazu AND nombre='Recorrido histórico' AND turno='14:00');
+EXEC actividades.InsertarTourGuia @a, @g_aguirre;
+
+-- Observación nocturna @ Iguazú 20:00 -> Torres (geología, 2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_iguazu AND nombre='Observación nocturna' AND turno='20:00');
+EXEC actividades.InsertarTourGuia @a, @g_torres;
+
+-- Safari fotográfico @ Lanín 10:30 -> Paredes (2026-08)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_lanin AND nombre='Safari fotográfico' AND turno='10:30');
+EXEC actividades.InsertarTourGuia @a, @g_paredes;
+
+-- Caminata guiada @ Lanín 12:00 -> Sosa (2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_lanin AND nombre='Caminata guiada' AND turno='12:00');
+EXEC actividades.InsertarTourGuia @a, @g_sosa;
+
+-- Observación de flora @ Lanín 20:00 -> Romero (botánica, 2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_lanin AND nombre='Observación de flora' AND turno='20:00');
+EXEC actividades.InsertarTourGuia @a, @g_romero;
+
+-- Avistaje de aves @ Sierra Verde 09:00 -> Torres (2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_sierra AND nombre='Avistaje de aves' AND turno='09:00');
+EXEC actividades.InsertarTourGuia @a, @g_torres;
+
+-- Recorrido histórico @ Sierra Verde 14:00 -> Aguirre (2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_sierra AND nombre='Recorrido histórico' AND turno='14:00');
+EXEC actividades.InsertarTourGuia @a, @g_aguirre;
+
+-- Caminata guiada @ Sierra Verde 12:00 -> Rojas (2027)
+SET @a = (SELECT id_atraccion FROM actividades.Atraccion WHERE id_parque=@p_sierra AND nombre='Caminata guiada' AND turno='12:00');
+EXEC actividades.InsertarTourGuia @a, @g_rojas;
+GO
+
+/*
+SELECT tg.id_tour_guia, p.nombre AS parque, a.nombre AS atraccion, a.turno,
+       g.nombre AS guia, g.especialidad, g.vigencia_hasta
+FROM actividades.TourGuia tg
+INNER JOIN actividades.Atraccion a ON a.id_atraccion = tg.id_atraccion
+INNER JOIN parques.Parque p ON p.id_parque = a.id_parque
+INNER JOIN personal.GuiaAutorizado g ON g.id_guia = tg.id_guia
+WHERE tg.estado = 0
+ORDER BY p.nombre, a.turno;
+GO
+*/
+--======================================================
+--				ALTA DE GUARDAPARQUES
+--======================================================
+-- Seed: 20 guardaparques via personal.guardaparque_alta
+EXEC personal.guardaparque_alta 'Esteban Quiroga',     '24556677', '2015-03-01', NULL;
+EXEC personal.guardaparque_alta 'Marcela Ibáñez',      '26778899', '2016-07-15', NULL;
+EXEC personal.guardaparque_alta 'Hernán Lucero',       '23445566', '2014-01-10', '2023-12-31';
+EXEC personal.guardaparque_alta 'Patricia Vera',       '27889911', '2017-09-01', NULL;
+EXEC personal.guardaparque_alta 'Gustavo Maldonado',   '22334455', '2013-05-20', NULL;
+EXEC personal.guardaparque_alta 'Silvina Cabrera',     '28990022', '2018-02-05', NULL;
+EXEC personal.guardaparque_alta 'Ricardo Peralta',     '21556688', '2012-07-12', '2022-06-30';
+EXEC personal.guardaparque_alta 'Noelia Figueroa',     '29112233', '2019-05-01', NULL;
+EXEC personal.guardaparque_alta 'Daniel Sandoval',     '25667700', '2015-04-18', NULL;
+EXEC personal.guardaparque_alta 'Verónica Molina',     '27223344', '2017-08-09', NULL;
+
+--EJECUTAR O NO SP DE CIFRADO
+
+EXEC personal.guardaparque_alta'Alejandro Ríos',      '23778822', '2014-10-30', NULL;
+EXEC personal.guardaparque_alta 'Gabriela Suárez',     '28445599', '2018-03-22', NULL;
+EXEC personal.guardaparque_alta 'Sergio Cáceres',      '22667733', '2013-12-01', '2021-11-30';
+EXEC personal.guardaparque_alta 'Lorena Benítez',      '29334466', '2019-06-14', NULL;
+EXEC personal.guardaparque_alta 'Fabián Acosta',       '24990077', '2016-01-08', NULL;
+EXEC personal.guardaparque_alta 'Mónica Ledesma',      '27556601', '2017-09-15', NULL;
+EXEC personal.guardaparque_alta 'Pablo Miranda',       '23001144', '2014-05-25', NULL;
+EXEC personal.guardaparque_alta 'Andrea Ojeda',        '28112266', '2018-02-11', NULL;
+EXEC personal.guardaparque_alta 'Marcelo Villalba',    '22778844', '2013-08-03', '2023-07-31';
+EXEC personal.guardaparque_alta 'Carolina Espinoza',   '29990055', '2019-07-19', NULL;
+GO
+/*
+SELECT * FROM personal.Guardaparque
+*/
