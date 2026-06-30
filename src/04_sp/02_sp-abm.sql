@@ -993,7 +993,7 @@ CREATE OR ALTER PROCEDURE actividades.InsertarTourGuia
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores VARCHAR(2000) = '';
 
     IF @id_atraccion IS NULL
         SET @v_errores += 'El id de la atraccion es obligatorio. ';
@@ -1010,7 +1010,7 @@ BEGIN
         SELECT 1 FROM personal.GuiaAutorizado
         WHERE id_guia = @id_guia
         AND vigencia_hasta IS NOT NULL
-        AND vigencia_desde <= vigencia_hasta
+        AND vigencia_hasta < CAST(GETDATE() AS DATE)
     )
         SET @v_errores += 'El guía no se encuentra en vigencia';
 

@@ -43,8 +43,8 @@ BEGIN
 
     -- 
 
-    INSERT INTO personal.GuiaAutorizado(nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, activo)
-    VALUES (@nombre, @dni, @especialidad, @titulo, @vigencia_desde, @vigencia_hasta, @activo);
+    INSERT INTO personal.GuiaAutorizado(nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta)
+    VALUES (@nombre, @dni, @especialidad, @titulo, @vigencia_desde, @vigencia_hasta);
 END
 
 -- Pruebas sobre validaciones
