@@ -258,19 +258,6 @@ BEGIN
         c.id_parque,
         c.fecha,
         c.id_tipo_visitante,
-        -- tenemos, por ejemplo: 350 adultos (que se generan en la tabla cantidades)
-        -- la clausula del join de abajo realiza divisiones por grupos 
-        -- n.n * 100 siempre va a ser 1 * 100 al principio (100 es el tamaño de cada grupo asignado y n.n un valor del 1 al 2500 consecutivo
-        -- si n.n * 100 es menor a la cantidad total (350), se inserta solo el tamaño del grupo (100)
-        -- de los 350, se insertan 100
-        -- en el proximo grupo, n.n vale 2 por lo que n.n * 100 = 200.
-        -- 200 es menor a la cantidad total? sí: 200 <= 350, se insertan 100
-        -- 300 es menor a la cantidad total? si: 300 <= 350, se insertan 100
-        -- n.n * 100 = 400, es menor a la cantidad total? no: 400 > 350 entra al ELSE
-        -- entonces, se inserta el calculo: 350 - ((4 - 1) * 100) = 50
-        -- siendo 350 el total de adultos, 4 es n.n y 100 es el tamaño del grupo, 
-        --este calculo solo saca la diferencia entre el anterior y el total.
-        -- dando asi los que "restan" de insertar.
         CASE 
             WHEN n.n * @tamanio_grupo <= c.cantidad THEN @tamanio_grupo
             ELSE c.cantidad - ((n.n - 1) * @tamanio_grupo)
