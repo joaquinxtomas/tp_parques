@@ -212,7 +212,7 @@ GO
 
 
 -- Entrada_Nuevo
-/*
+
 -- CASO 28: parque inexistente → error
 BEGIN TRY
     DECLARE @id_res INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
@@ -359,7 +359,7 @@ BEGIN CATCH
     PRINT 'CASO 38 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
-*/
+
 --====================================================================================
 --						LOGICAS DE NEGOCIO REGISTRO DE ACTIVIDADES
 --====================================================================================

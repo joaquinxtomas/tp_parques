@@ -16,19 +16,19 @@ USE master;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'parques_admin')
-    CREATE LOGIN parques_admin WITH PASSWORD = 'Admin#Parques2026!';
+    CREATE LOGIN parques_admin WITH PASSWORD = -- Clave de administrador;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'parques_operador')
-    CREATE LOGIN parques_operador WITH PASSWORD = 'Operador#Parques2026!';
+    CREATE LOGIN parques_operador WITH PASSWORD = -- Clave de operador;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'parques_impor')
-    CREATE LOGIN parques_impor WITH PASSWORD = 'Importacion#Parques2026!';
+    CREATE LOGIN parques_impor WITH PASSWORD = -- Clave de importador;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'parques_consultas')
-    CREATE LOGIN parques_consultas WITH PASSWORD = 'Consultas#Parques2026!';
+    CREATE LOGIN parques_consultas WITH PASSWORD = -- Clave de consultas;
 GO
 
 -- Crear usuarios en la base de datos

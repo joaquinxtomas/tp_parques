@@ -111,10 +111,10 @@ DECLARE @id_p   INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Nahu
 DECLARE @id_adu INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Adulto');
 DECLARE @id_est INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Estudiante');
 DECLARE @id_jub INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado');
-DECLARE @id_ext INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Extranjero');
+DECLARE @id_ext INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'No residente');
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-06-01 08:30:00', @forma_pago='Efectivo', @id_tipo_1=@id_adu, @cantidad_1=3;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-05-01 08:30:00', @forma_pago='Efectivo', @id_tipo_1=@id_adu, @cantidad_1=3;
     PRINT 'Lote  1 OK';
 END TRY 
 BEGIN CATCH 
@@ -130,7 +130,7 @@ BEGIN CATCH
 END CATCH
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-06-03 10:15:00', @forma_pago='Crédito', @id_tipo_1=@id_ext, @cantidad_1=4;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-05-03 10:15:00', @forma_pago='Crédito', @id_tipo_1=@id_ext, @cantidad_1=4;
     PRINT 'Lote  3 OK'; 
 END TRY 
 BEGIN CATCH 
@@ -138,7 +138,7 @@ BEGIN CATCH
 END CATCH
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-06-04 11:00:00', @forma_pago='QR', @id_tipo_1=@id_jub, @cantidad_1=2, @id_tipo_2=@id_adu, @cantidad_2=3;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-05-04 11:00:00', @forma_pago='QR', @id_tipo_1=@id_jub, @cantidad_1=2, @id_tipo_2=@id_adu, @cantidad_2=3;
     PRINT 'Lote  4 OK'; 
 END TRY 
 BEGIN CATCH 
@@ -146,7 +146,7 @@ BEGIN CATCH
 END CATCH
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-06-05 13:00:00', @forma_pago='Transferencia', @id_tipo_1=@id_est, @cantidad_1=5;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-05-05 13:00:00', @forma_pago='Transferencia', @id_tipo_1=@id_est, @cantidad_1=5;
     PRINT 'Lote  5 OK'; 
 END TRY 
 BEGIN CATCH 
@@ -154,7 +154,7 @@ BEGIN CATCH
 END CATCH
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=3, @fecha='2026-06-06 09:30:00', @forma_pago='Efectivo', @id_tipo_1=@id_ext, @cantidad_1=2;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=3, @fecha='2026-05-05 09:30:00', @forma_pago='Efectivo', @id_tipo_1=@id_ext, @cantidad_1=2;
     PRINT 'Lote  6 OK'; 
 END TRY 
 BEGIN CATCH 
@@ -162,28 +162,28 @@ BEGIN CATCH
 END CATCH
 
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-06-07 08:00:00', @forma_pago='Débito', @id_tipo_1=@id_est, @cantidad_1=2, @id_tipo_2=@id_ext, @cantidad_2=1;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-05-07 08:00:00', @forma_pago='Débito', @id_tipo_1=@id_est, @cantidad_1=2, @id_tipo_2=@id_ext, @cantidad_2=1;
     PRINT 'Lote  7 OK'; 
 END TRY 
 BEGIN CATCH 
     PRINT 'Lote  7 ERROR: '+ERROR_MESSAGE(); 
 END CATCH
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-06-08 14:00:00', @forma_pago='QR', @id_tipo_1=@id_jub, @cantidad_1=1;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=2, @fecha='2026-05-08 14:00:00', @forma_pago='QR', @id_tipo_1=@id_jub, @cantidad_1=1;
     PRINT 'Lote  8 OK'; 
 END TRY 
 BEGIN CATCH 
     PRINT 'Lote  8 ERROR: '+ERROR_MESSAGE(); 
 END CATCH
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=3, @fecha='2026-06-09 16:30:00', @forma_pago='Crédito', @id_tipo_1=@id_ext, @cantidad_1=6;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=3, @fecha='2026-05-09 16:30:00', @forma_pago='Crédito', @id_tipo_1=@id_ext, @cantidad_1=6;
     PRINT 'Lote  9 OK'; 
 END TRY 
 BEGIN CATCH 
     PRINT 'Lote  9 ERROR: '+ERROR_MESSAGE(); 
 END CATCH
 BEGIN TRY 
-    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-06-10 10:00:00', @forma_pago='Efectivo', @id_tipo_1=@id_jub, @cantidad_1=3, @id_tipo_2=@id_ext, @cantidad_2=2, @id_tipo_3=@id_adu, @cantidad_3=2;
+    EXEC ventas.Entrada_Nuevo @id_parque=@id_p, @pto_venta=1, @fecha='2026-05-10 10:00:00', @forma_pago='Efectivo', @id_tipo_1=@id_jub, @cantidad_1=3, @id_tipo_2=@id_ext, @cantidad_2=2, @id_tipo_3=@id_adu, @cantidad_3=2;
     PRINT 'Lote 10 OK'; 
 END TRY 
 BEGIN CATCH 

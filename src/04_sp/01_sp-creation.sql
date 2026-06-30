@@ -30,6 +30,11 @@ BEGIN
 END
 GO
 
+-- Recovery Model FULL: permite recuperar a un punto exacto en el tiempo.
+-- Requiere backups periodicos del log de transacciones.
+ALTER DATABASE ParquesNacionales SET RECOVERY FULL;
+GO
+
 USE ParquesNacionales
 GO
 
