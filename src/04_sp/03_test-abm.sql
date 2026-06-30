@@ -1267,7 +1267,6 @@ IF NOT EXISTS (SELECT 1 FROM parques.Parque WHERE nombre = 'Parque Nacional Nahu
 GO
 
 -- ─── InsertarAtraccion ────────────────────────────────────────────
-
 PRINT '';
 PRINT '─── InsertarAtraccion ───────────────────────────────';
 
@@ -1276,7 +1275,7 @@ BEGIN TRY
     DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
     EXEC actividades.InsertarAtraccion
         @id_parque = @id_p, @nombre = 'Paseo por la Garganta del Diablo',
-        @costo = 5000.00, @duracion = 90, @cupo_maximo = 25, @tipo = 'Senderismo';
+        @costo = 5000.00, @duracion = 90, @cupo_maximo = 25, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 1 OK: atracción insertada';
 END TRY
 BEGIN CATCH
@@ -1289,7 +1288,7 @@ BEGIN TRY
     DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
     EXEC actividades.InsertarAtraccion
         @id_parque = @id_p, @nombre = 'Mirador Salto Bossetti',
-        @costo = 0.00, @duracion = 30, @cupo_maximo = NULL, @tipo = 'Avistaje';
+        @costo = 0.00, @duracion = 30, @cupo_maximo = NULL, @tipo = 'Avistaje', @turno = '10:00';
     PRINT 'CASO 2 OK: atracción gratuita insertada';
 END TRY
 BEGIN CATCH
@@ -1302,7 +1301,7 @@ BEGIN TRY
     DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
     EXEC actividades.InsertarAtraccion
         @id_parque = @id_p, @nombre = 'Acceso libre al Cerro Campanario',
-        @costo = 0.00, @duracion = NULL, @cupo_maximo = NULL, @tipo = 'Senderismo';
+        @costo = 0.00, @duracion = NULL, @cupo_maximo = NULL, @tipo = 'Senderismo', @turno = '08:00';
     PRINT 'CASO 3 OK: atracción con NULLs insertada';
 END TRY
 BEGIN CATCH
@@ -1315,7 +1314,7 @@ BEGIN TRY
     DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
     EXEC actividades.InsertarAtraccion
         @id_parque = @id_p, @nombre = 'Paseo por la Garganta del Diablo',
-        @costo = 3500.00, @duracion = 60, @cupo_maximo = 20, @tipo = 'Senderismo';
+        @costo = 3500.00, @duracion = 60, @cupo_maximo = 20, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 4 OK: mismo nombre en otro parque insertado';
 END TRY
 BEGIN CATCH
@@ -1323,12 +1322,12 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 5: nombre duplicado en el mismo parque → error
+-- CASO 5: nombre + parque + turno duplicado → error
 BEGIN TRY
     DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
     EXEC actividades.InsertarAtraccion
         @id_parque = @id_p, @nombre = 'Paseo por la Garganta del Diablo',
-        @costo = 5500.00, @duracion = 90, @cupo_maximo = 25, @tipo = 'Senderismo';
+        @costo = 5500.00, @duracion = 90, @cupo_maximo = 25, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 5 FALLO';
 END TRY
 BEGIN CATCH
@@ -1340,7 +1339,7 @@ GO
 BEGIN TRY
     EXEC actividades.InsertarAtraccion
         @id_parque = 99999, @nombre = 'Atraccion en parque fantasma',
-        @costo = 1000.00, @duracion = 45, @cupo_maximo = 15, @tipo = 'Cultural';
+        @costo = 1000.00, @duracion = 45, @cupo_maximo = 15, @tipo = 'Cultural', @turno = '09:00';
     PRINT 'CASO 6 FALLO';
 END TRY
 BEGIN CATCH
@@ -1350,14 +1349,13 @@ GO
 
 -- ver lo que quedó cargado
 SELECT a.id_atraccion, p.nombre AS parque, a.nombre AS atraccion,
-       a.costo, a.duracion AS duracion_min, a.cupo_maximo, a.tipo
+       a.costo, a.turno ,a.duracion AS duracion_min, a.cupo_maximo, a.tipo
 FROM actividades.Atraccion a
 INNER JOIN parques.Parque p ON p.id_parque = a.id_parque
 ORDER BY a.id_atraccion;
 GO
 
 -- ─── ActualizarAtraccion ────────────────────────────────────────────
-
 PRINT '';
 PRINT '─── ActualizarAtraccion ───────────────────────────────';
 
@@ -1365,9 +1363,9 @@ PRINT '─── ActualizarAtraccion ──────────────�
 BEGIN TRY
     DECLARE @id_ig INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
     DECLARE @id_na INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi');
-    EXEC actividades.InsertarAtraccion @id_ig, 'TEST_Sendero', 1000, 60, 20, 'Senderismo';
-    EXEC actividades.InsertarAtraccion @id_ig, 'TEST_Mirador', 0, 30, NULL, 'Avistaje';
-    EXEC actividades.InsertarAtraccion @id_na, 'TEST_Kayak', 2500, 90, 10, 'Acuatica';
+    EXEC actividades.InsertarAtraccion @id_ig, 'TEST_Sendero', 1000, 60, 20, 'Senderismo', '09:00';
+    EXEC actividades.InsertarAtraccion @id_ig, 'TEST_Mirador', 0, 30, NULL, 'Avistaje', '10:00';
+    EXEC actividades.InsertarAtraccion @id_na, 'TEST_Kayak', 2500, 90, 10, 'Acuatica', '11:00';
     PRINT 'PREREQUISITOS MODIFICACION OK';
 END TRY
 BEGIN CATCH
@@ -1375,12 +1373,12 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 7: modificación válida, cambia costo y duración
+-- CASO 7: modificación válida, cambia costo y duración (mismo turno)
 BEGIN TRY
     DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Sendero');
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = 'TEST_Sendero',
-        @costo = 1500, @duracion = 75, @cupo_maximo = 20, @tipo = 'Senderismo';
+        @costo = 1500, @duracion = 75, @cupo_maximo = 20, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 7 OK: costo y duración actualizados';
 END TRY
 BEGIN CATCH
@@ -1390,10 +1388,10 @@ GO
 
 -- CASO 8: cambio de nombre
 BEGIN TRY
-    DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador');
+    DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador Renovado');
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = 'TEST_Mirador Renovado',
-        @costo = 0, @duracion = 30, @cupo_maximo = NULL, @tipo = 'Avistaje';
+        @costo = 0, @duracion = 30, @cupo_maximo = NULL, @tipo = 'Avistaje', @turno = '11:00';
     PRINT 'CASO 8 OK: nombre actualizado';
 END TRY
 BEGIN CATCH
@@ -1405,7 +1403,7 @@ GO
 BEGIN TRY
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = 99999, @nombre = 'Fantasma',
-        @costo = 100, @duracion = 30, @cupo_maximo = 10, @tipo = 'Senderismo';
+        @costo = 100, @duracion = 30, @cupo_maximo = 10, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 9 FALLO';
 END TRY
 BEGIN CATCH
@@ -1413,12 +1411,12 @@ BEGIN CATCH
 END CATCH
 GO
 
--- CASO 10: nombre duplicado pero en otro parque (debe funcionar)
+-- CASO 10: cambiar nombre a uno que existe en OTRO parque (debe funcionar)
 BEGIN TRY
     DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Sendero');
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = 'TEST_Kayak',
-        @costo = 1500, @duracion = 75, @cupo_maximo = 20, @tipo = 'Senderismo';
+        @costo = 1500, @duracion = 75, @cupo_maximo = 20, @tipo = 'Senderismo', @turno = '09:00';
     PRINT 'CASO 10 OK: nombre duplicado en otro parque permitido';
 END TRY
 BEGIN CATCH
@@ -1432,7 +1430,7 @@ BEGIN TRY
         AND id_parque = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Nahuel Huapi'));
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = 'TEST_Mirador Renovado',
-        @costo = 2500, @duracion = 90, @cupo_maximo = 10, @tipo = 'Acuatica';
+        @costo = 2500, @duracion = 90, @cupo_maximo = 10, @tipo = 'Acuatica', @turno = '11:00';
     PRINT 'CASO 11 OK: nombre de otro parque permitido';
 END TRY
 BEGIN CATCH
@@ -1446,14 +1444,13 @@ BEGIN TRY
         AND id_parque = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu'));
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = '',
-        @costo = -100, @duracion = -5, @cupo_maximo = 0, @tipo = '';
+        @costo = -100, @duracion = -5, @cupo_maximo = 0, @tipo = '', @turno = '09:00';
     PRINT 'CASO 12 FALLO';
 END TRY
 BEGIN CATCH
     PRINT 'CASO 12 OK (rechazo esperado): ' + ERROR_MESSAGE();
 END CATCH
 GO
-
 -- ─── EliminarAtraccion ────────────────────────────────────────────
 
 PRINT '';
@@ -1491,6 +1488,47 @@ BEGIN CATCH
 END CATCH
 GO
 
+-- ─── ACTIVIDADES SIMULTANEAS ─────────────────────────────────
+PRINT '';
+PRINT '─── Actividades simultaneas (mismo parque, mismo turno) ───';
+
+-- CASO 16: dos atracciones DISTINTAS, mismo parque, mismo turno -> AMBAS OK
+BEGIN TRY
+    DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
+    EXEC actividades.InsertarAtraccion
+        @id_parque = @id_p, @nombre = 'Safari Fotografico',
+        @costo = 4000, @duracion = 90, @cupo_maximo = 15, @tipo = 'Avistaje', @turno = '14:00';
+    EXEC actividades.InsertarAtraccion
+        @id_parque = @id_p, @nombre = 'Caminata Botanica',
+        @costo = 2000, @duracion = 90, @cupo_maximo = 10, @tipo = 'Senderismo', @turno = '14:00';
+    PRINT 'CASO 16 OK: dos actividades distintas coexisten en el mismo parque y turno (simultaneas)';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 16 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- CASO 17: misma actividad (mismo nombre) en el mismo parque pero OTRO turno -> OK
+BEGIN TRY
+    DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
+    EXEC actividades.InsertarAtraccion
+        @id_parque = @id_p, @nombre = 'Safari Fotografico',
+        @costo = 4000, @duracion = 90, @cupo_maximo = 15, @tipo = 'Avistaje', @turno = '17:00';
+    PRINT 'CASO 17 OK: misma actividad en otro turno permitida';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO 17 ERROR inesperado: ' + ERROR_MESSAGE();
+END CATCH
+GO
+
+-- Verificacion: actividades de Iguazu en el turno 14:00 (deben ser 2 distintas = simultaneas)
+SELECT a.nombre, a.turno, p.nombre AS parque
+FROM actividades.Atraccion a
+INNER JOIN parques.Parque p ON p.id_parque = a.id_parque
+WHERE p.nombre = 'Parque Nacional Iguazu' AND a.turno = '14:00' AND a.estado = 0;
+GO
+
+
 -- ver cómo quedó la tabla
 SELECT id_atraccion, nombre, costo, duracion, cupo_maximo, tipo, estado
 FROM actividades.Atraccion
@@ -1507,8 +1545,7 @@ PRINT '                 TESTS - TOURGUIA                  ';
 PRINT '═══════════════════════════════════════════════════';
 
 -- PRECONDICIONES
-
--- PRECONDICIONES
+-- PRECONDICIONES TOURGUIA
 DECLARE @id_iguazu INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Parque Nacional Iguazu');
 
 IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '11111111')
@@ -1521,15 +1558,16 @@ IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = '22222222')
 
 -- limpiar asignaciones previas de la atracción de test
 DELETE FROM actividades.TourGuia 
-WHERE id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+WHERE id_atraccion = (SELECT id_atraccion FROM actividades.Atraccion 
+                      WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00');  -- agrego turno para identificar única
 
 -- si existe pero está dada de baja, reactivarla
-IF EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND estado = 1)
-    UPDATE actividades.Atraccion SET estado = 0 WHERE nombre = 'TEST_Tour_Selva';
+IF EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00' AND estado = 1)
+    UPDATE actividades.Atraccion SET estado = 0 WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00';
 
 -- si no existe, crearla
-IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva')
-    EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo';
+IF NOT EXISTS (SELECT 1 FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00')
+    EXEC actividades.InsertarAtraccion @id_iguazu, 'TEST_Tour_Selva', 3000, 120, 15, 'Senderismo', '12:00';
 GO
 
 -- ─── InsertarTourGuia ────────────────────────────────────────────
@@ -1539,7 +1577,7 @@ PRINT '─── InsertarTourGuia ───────────────�
 
 -- CASO 1: asignar guía a atracción
 BEGIN TRY
-    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00');
     DECLARE @id_guia INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '11111111');
     EXEC actividades.InsertarTourGuia @id_atraccion = @id_tour, @id_guia = @id_guia;
     PRINT 'CASO 1 OK: guía asignado a atracción';
@@ -1551,8 +1589,8 @@ GO
 
 -- CASO 2: asignar segundo guía a la misma atracción
 BEGIN TRY
-    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
-    DECLARE @id_guia INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '22222222');
+	DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00');
+	DECLARE @id_guia INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '22222222');
     EXEC actividades.InsertarTourGuia @id_atraccion = @id_tour, @id_guia = @id_guia;
     PRINT 'CASO 2 OK: segundo guía asignado';
 END TRY
@@ -1563,7 +1601,7 @@ GO
 
 -- CASO 3: guía ya asignado (duplicado) → error
 BEGIN TRY
-    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00');
     DECLARE @id_guia INT = (SELECT id_guia FROM personal.GuiaAutorizado WHERE dni = '11111111');
     EXEC actividades.InsertarTourGuia @id_atraccion = @id_tour, @id_guia = @id_guia;
     PRINT 'CASO 3 FALLO';
@@ -1575,7 +1613,7 @@ GO
 
 -- CASO 4: guía inexistente → error
 BEGIN TRY
-    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva');
+    DECLARE @id_tour INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Tour_Selva' AND turno = '12:00');
     EXEC actividades.InsertarTourGuia @id_atraccion = @id_tour, @id_guia = 99999;
     PRINT 'CASO 4 FALLO';
 END TRY
@@ -1606,7 +1644,7 @@ END CATCH
 GO
 
 -- verificar altas
-SELECT tg.id_tour_guia, a.nombre AS atraccion, g.nombre AS guia, tg.estado
+SELECT tg.id_tour_guia, a.nombre AS atraccion,a.turno, g.nombre AS guia, tg.estado
 FROM actividades.TourGuia tg
 INNER JOIN actividades.Atraccion a ON a.id_atraccion = tg.id_atraccion
 INNER JOIN personal.GuiaAutorizado g ON g.id_guia = tg.id_guia

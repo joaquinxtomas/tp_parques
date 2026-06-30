@@ -14,7 +14,7 @@ GO
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'ParquesNacionales')
 BEGIN
 	CREATE DATABASE ParquesNacionales
-	ON PRIMARY (
+	/*ON PRIMARY (
 		NAME     = 'ParquesNacionales',
 		FILENAME = 'D:\SQLData\ParquesNacionales.mdf',
 		SIZE     = 64MB,
@@ -25,7 +25,7 @@ BEGIN
 		FILENAME = 'E:\SQLLogs\ParquesNacionales_log.ldf',
 		SIZE     = 64MB,
 		FILEGROWTH = 64MB
-	)
+	)*/
 	COLLATE Modern_Spanish_CI_AS;
 END
 GO
