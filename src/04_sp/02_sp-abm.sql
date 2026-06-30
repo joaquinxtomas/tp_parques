@@ -1020,7 +1020,6 @@ BEGIN
 END
 GO
 
-
 --BAJA
 CREATE OR ALTER PROCEDURE actividades.EliminarTourGuia
     @id_tour_guia INT

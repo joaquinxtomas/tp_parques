@@ -1388,7 +1388,7 @@ GO
 
 -- CASO 8: cambio de nombre
 BEGIN TRY
-    DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador Renovado');
+    DECLARE @id INT = (SELECT id_atraccion FROM actividades.Atraccion WHERE nombre = 'TEST_Mirador');
     EXEC actividades.ActualizarAtraccion
         @id_atraccion = @id, @nombre = 'TEST_Mirador Renovado',
         @costo = 0, @duracion = 30, @cupo_maximo = NULL, @tipo = 'Avistaje', @turno = '11:00';
