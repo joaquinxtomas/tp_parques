@@ -1182,8 +1182,48 @@ GO
 ---------------------------------------------------------------------------
 --------------------------- ABM Guardaparques -----------------------------
 ---------------------------------------------------------------------------
--- Alta (cifrado)
 CREATE OR ALTER PROCEDURE personal.guardaparque_alta
+    @nombre varchar(100),
+    @dni varchar(10),
+    @vigencia_desde date,
+    @vigencia_hasta date
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @activo bit = 1;
+
+    -- Chequeo que el guardaparque no esté cargado
+
+    IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni = @dni and nombre = @nombre)
+        SET @v_errores += 'Ya existe el guardaparque. ';
+            
+    -- Chequeo que los campos obligatorios tengan información para cargar
+
+    IF @nombre IS NULL
+        SET @v_errores += 'El nombre del guardaparque es obligatorio. ';
+    
+    IF @dni IS NULL
+        SET @v_errores += 'El DNI del guardaparque es obligatorio. ';
+  
+    IF @vigencia_desde IS NULL
+        SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
+
+    -- En caso de error, salgo y muestro el log
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    -- Inserto el guardaparque con los datos recibidos y el campo activo por defecto en 1
+
+    INSERT INTO personal.Guardaparque(nombre, dni, vigencia_desde, vigencia_hasta, activo)
+    VALUES (@nombre, @dni, @vigencia_desde, @vigencia_hasta, @activo);
+END
+-- Alta (cifrado)
+CREATE OR ALTER PROCEDURE personal.guardaparque_alta_cifrado
     @nombre         varchar(100),
     @dni            varchar(10),
     @vigencia_desde date,
@@ -1254,8 +1294,50 @@ BEGIN
     update personal.Guardaparque set activo = @activo where id_guardaparque = @id_guardaparque
 END
 GO
--- Modificacion (cifrado)
 CREATE OR ALTER PROCEDURE personal.guardaparque_modificacion
+    @id_guardaparque int,
+    @nombre varchar(100),
+    @dni varchar(10),
+    @vigencia_desde date,
+    @vigencia_hasta date
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    -- Chequeo que exista el guardaparque
+    
+    IF NOT EXISTS (SELECT 1 FROM personal.Guardaparque WHERE id_guardaparque = @id_guardaparque)
+        SET @v_errores += 'No se encontró el guardaparque. ';
+    
+    -- Chequeo que los campos no nulos se hayan ingresado
+
+    IF @nombre IS NULL
+        SET @v_errores += 'El nombre del guardaparque es obligatorio. ';
+    
+    IF @dni IS NULL
+        SET @v_errores += 'El DNI del guardaparque es obligatorio. ';
+  
+    IF @vigencia_desde IS NULL
+        SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
+
+    -- Si hubo errores salgo con el log correspondiente
+    
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    -- Actualizo el guardaparque con los datos recibidos
+
+    update personal.Guardaparque 
+    set nombre = @nombre, dni = @dni, vigencia_desde = @vigencia_desde, vigencia_hasta = @vigencia_hasta 
+    where id_guardaparque = @id_guardaparque
+END
+GO
+-- Modificacion (cifrado)
+CREATE OR ALTER PROCEDURE personal.guardaparque_modificacion_cifrado
     @id_guardaparque int,
     @nombre          varchar(100),
     @dni             varchar(10),
@@ -1306,8 +1388,48 @@ GO
 ---------------------------------------------------------------------------
 --------------------------------- ABM Guías -------------------------------
 ---------------------------------------------------------------------------
--- Alta (cifrado)
 CREATE OR ALTER PROCEDURE personal.guiaAutorizado_alta
+    @nombre varchar(100),
+    @dni varchar(10),
+    @especialidad varchar(100),
+    @titulo varchar(100),
+    @vigencia_desde date,
+    @vigencia_hasta date
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @activo bit = 1;
+    -- Chequeo que no exista el guía que se quiere cargar
+    
+    IF EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = @dni and nombre = @nombre)
+        SET @v_errores += 'Ya existe el guía. ';
+
+    -- Chequeo que los campos obligatorios se hayan recibido
+    IF @nombre IS NULL
+        SET @v_errores += 'El nombre del guía es obligatorio. ';
+    
+    IF @dni IS NULL
+        SET @v_errores += 'El DNI del guía es obligatorio. ';
+  
+    IF @vigencia_desde IS NULL
+        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
+
+    -- Salgo con error en caso de existir
+    
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    -- 
+
+    INSERT INTO personal.GuiaAutorizado(nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta)
+    VALUES (@nombre, @dni, @especialidad, @titulo, @vigencia_desde, @vigencia_hasta);
+END
+-- Alta (cifrado)
+CREATE OR ALTER PROCEDURE personal.guiaAutorizado_alta_cifrado
     @nombre         varchar(100),
     @dni            varchar(10),
     @especialidad   varchar(100),
@@ -1382,8 +1504,52 @@ BEGIN
     update personal.GuiaAutorizado set activo = 0 where id_guia = @id_guia
 END
 GO
--- Modificación (cifrado)
+-- Modificación
 CREATE OR ALTER PROCEDURE personal.guia_modificacion
+    @id_guia int,
+    @nombre varchar(100),
+    @dni varchar(10),
+    @especialidad varchar(100),
+    @titulo varchar(100),
+    @vigencia_desde date,
+    @vigencia_hasta date
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    -- Chequeo que existía el guía que se quiere modificar
+    
+     IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
+        SET @v_errores += 'No se encontró el guía. ';
+            
+    -- Chequeo que se hayan enviado los campos que no se pueden dejar como nulos
+
+    IF @nombre IS NULL
+        SET @v_errores += 'El nombre del guía es obligatorio. ';
+    
+    IF @dni IS NULL
+        SET @v_errores += 'El DNI del guía es obligatorio. ';
+  
+    IF @vigencia_desde IS NULL
+        SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
+
+   -- Salgo con los errores en caso de existir
+   
+   IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    -- Actualizo el registro con los datos recibidos
+
+    update personal.GuiaAutorizado 
+    set nombre = @nombre, dni = @dni, especialidad = @especialidad, titulo = @titulo, vigencia_desde = @vigencia_desde, vigencia_hasta = @vigencia_hasta 
+    where id_guia = @id_guia
+END
+-- Modificación (cifrado)
+CREATE OR ALTER PROCEDURE personal.guia_modificacion_cifrado
     @id_guia        int,
     @nombre         varchar(100),
     @dni            varchar(10),
