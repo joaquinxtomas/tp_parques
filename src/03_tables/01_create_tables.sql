@@ -271,6 +271,9 @@ BEGIN
 			forma_pago IN ('Efectivo', 'Débito', 'Crédito', 'Transferencia', 'QR')
 		)
 	);
+
+	CREATE INDEX IX_Entrada_Parque_Fecha_Origen
+	ON ventas.Entrada (id_parque, fecha, origen);
 END
 GO
 

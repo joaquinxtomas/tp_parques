@@ -507,3 +507,19 @@ SELECT id_ticket_atraccion, id_atraccion, fecha, fecha_actividad, cantidad, subt
 FROM   actividades.TicketsAtraccion
 ORDER BY id_atraccion, fecha_actividad, id_ticket_atraccion;
 GO
+
+-- Cancelar un registro ya dado de baja -> RECHAZO
+BEGIN TRY
+    DECLARE @tk2 INT = (
+        SELECT MIN(id_ticket_atraccion)
+        FROM actividades.TicketsAtraccion
+        WHERE estado = 1
+    );
+
+    EXEC actividades.CancelarTicketActividad @id_ticketAtraccion = @tk2;
+
+    PRINT 'CASO FALLO: no deberia haber cancelado';
+END TRY
+BEGIN CATCH
+    PRINT 'CASO OK (rechazo esperado): ' + ERROR_MESSAGE();
+END CATCH
