@@ -6,107 +6,109 @@ GO
 --              AMB
 
 --               ABM DE CONCESIONES
+-- PagoConcesion
 
--- Empresa
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Nueva
-    @razon_social VARCHAR(255),
-    @cuit VARCHAR(20),
-    @contacto VARCHAR(100)
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Nuevo
+    @id_concesion INT,
+    @fecha_pago DATE,
+    @periodo DATE,
+    @monto DECIMAL(18, 2)
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF @razon_social IS NULL OR LTRIM(RTRIM(@razon_social)) = ''
-        SET @v_errores = @v_errores + 'La razón social es obligatoria. ';
-
-    IF @cuit IS NULL OR LTRIM(RTRIM(@cuit)) = ''
-        SET @v_errores = @v_errores + 'El CUIT es obligatorio. ';
-    ELSE IF LEN(LTRIM(RTRIM(@cuit))) > 11
-        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
-    ELSE IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
-        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
-
-    IF @contacto IS NULL OR LTRIM(RTRIM(@contacto)) = ''
-        SET @v_errores = @v_errores + 'El contacto es obligatorio. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO concesiones.Empresa (razon_social, cuit, contacto)
-    VALUES (@razon_social, @cuit, @contacto);
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Modificar
-    @id_empresa INT,
-    @razon_social VARCHAR(255) = NULL,
-    @cuit VARCHAR(20) = NULL,
-    @contacto VARCHAR(100) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
-        SET @v_errores = @v_errores + 'La empresa no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
-        SET @v_errores = @v_errores + 'La razón social ya existe. ';
-
-    IF @cuit IS NOT NULL AND LEN(LTRIM(RTRIM(@cuit))) > 11
-        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
-    ELSE IF @cuit IS NOT NULL AND EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
-        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    IF @razon_social IS NOT NULL
-        UPDATE concesiones.Empresa
-        SET razon_social = @razon_social
-        WHERE id_empresa = @id_empresa;
-
-    IF @cuit IS NOT NULL
-        UPDATE concesiones.Empresa
-        SET cuit = @cuit
-        WHERE id_empresa = @id_empresa;
-
-    IF @contacto IS NOT NULL
-        UPDATE concesiones.Empresa
-        SET contacto = @contacto
-        WHERE id_empresa = @id_empresa;
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.Empresa_Eliminar
-    @id_empresa INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
-        SET @v_errores = @v_errores + 'La empresa no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.Empresa where id_empresa = @id_empresa AND estado = 1)
-        SET @v_errores = @v_errores + 'La empresa ya está deshabilitada. ';
     
+    SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
+
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion AND estado = 0)
+        SET @v_errores = @v_errores + 'La concesión no existe o está inactiva. ';
+
+    IF @fecha_pago IS NULL
+        SET @v_errores = @v_errores + 'La fecha de pago es obligatoria. ';
+
+    IF @periodo IS NULL
+        SET @v_errores = @v_errores + 'El período es obligatorio. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_concesion = @id_concesion AND periodo = @periodo)
+        SET @v_errores = @v_errores + 'Ya existe un pago para este período. ';
+
+    -- Cambiar por mayor o igual a 0 si se permiten pagos de $0
+    IF @monto IS NULL OR @monto <= 0
+        SET @v_errores = @v_errores + 'El monto es obligatorio y debe ser positivo. ';
+
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
 
-    UPDATE concesiones.Empresa SET estado = 1 WHERE id_empresa = @id_empresa;
+    INSERT INTO concesiones.PagoConcesion (id_concesion, fecha_pago, periodo, monto)
+    VALUES (@id_concesion, @fecha_pago, @periodo, @monto);
+END
+GO
 
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Modificar
+    @id_pago INT,
+    @fecha_pago DATE = NULL,
+    @periodo DATE = NULL,
+    @monto DECIMAL(18, 2) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
+        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
+
+    IF @monto IS NOT NULL AND @monto <= 0
+        SET @v_errores = @v_errores + 'El monto debe ser positivo. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    IF @fecha_pago IS NOT NULL
+        UPDATE concesiones.PagoConcesion
+        SET fecha_pago = @fecha_pago
+        WHERE id_pago = @id_pago;
+
+    IF @periodo IS NOT NULL
+    BEGIN
+        SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
+        UPDATE concesiones.PagoConcesion
+        SET periodo = @periodo
+        WHERE id_pago = @id_pago;
+    END
+
+    IF @monto IS NOT NULL
+        UPDATE concesiones.PagoConcesion
+        SET monto = @monto  
+        WHERE id_pago = @id_pago;
+END
+GO
+
+CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Eliminar
+    @id_pago INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
+        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion where id_pago = @id_pago AND estado = 1)
+        SET @v_errores = @v_errores + 'El pago de concesión ya está deshabilitado. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    UPDATE concesiones.PagoConcesion SET estado = 1 WHERE id_pago = @id_pago;
 END
 GO
 
@@ -242,110 +244,106 @@ BEGIN
     UPDATE concesiones.Concesion SET estado = 1 WHERE id_concesion = @id_concesion;
 END
 GO
+-- Empresa
 
--- PagoConcesion
-
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Nuevo
-    @id_concesion INT,
-    @fecha_pago DATE,
-    @periodo DATE,
-    @monto DECIMAL(18, 2)
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Nueva
+    @razon_social VARCHAR(255),
+    @cuit VARCHAR(20),
+    @contacto VARCHAR(100)
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF @razon_social IS NULL OR LTRIM(RTRIM(@razon_social)) = ''
+        SET @v_errores = @v_errores + 'La razón social es obligatoria. ';
+
+    IF @cuit IS NULL OR LTRIM(RTRIM(@cuit)) = ''
+        SET @v_errores = @v_errores + 'El CUIT es obligatorio. ';
+    ELSE IF LEN(LTRIM(RTRIM(@cuit))) > 11
+        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
+    ELSE IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit)
+        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
+
+    IF @contacto IS NULL OR LTRIM(RTRIM(@contacto)) = ''
+        SET @v_errores = @v_errores + 'El contacto es obligatorio. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO concesiones.Empresa (razon_social, cuit, contacto)
+    VALUES (@razon_social, @cuit, @contacto);
+END
+GO
+
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Modificar
+    @id_empresa INT,
+    @razon_social VARCHAR(255) = NULL,
+    @cuit VARCHAR(20) = NULL,
+    @contacto VARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
+        SET @v_errores = @v_errores + 'La empresa no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa WHERE razon_social = @razon_social AND id_empresa <> @id_empresa)
+        SET @v_errores = @v_errores + 'La razón social ya existe. ';
+
+    IF @cuit IS NOT NULL AND LEN(LTRIM(RTRIM(@cuit))) > 11
+        SET @v_errores = @v_errores + 'El CUIT es inválido (ingresarlo sin guiones, 11 dígitos). ';
+    ELSE IF @cuit IS NOT NULL AND EXISTS (SELECT 1 FROM concesiones.Empresa WHERE cuit = @cuit AND id_empresa <> @id_empresa)
+        SET @v_errores = @v_errores + 'El CUIT ya existe. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    IF @razon_social IS NOT NULL
+        UPDATE concesiones.Empresa
+        SET razon_social = @razon_social
+        WHERE id_empresa = @id_empresa;
+
+    IF @cuit IS NOT NULL
+        UPDATE concesiones.Empresa
+        SET cuit = @cuit
+        WHERE id_empresa = @id_empresa;
+
+    IF @contacto IS NOT NULL
+        UPDATE concesiones.Empresa
+        SET contacto = @contacto
+        WHERE id_empresa = @id_empresa;
+END
+GO
+
+CREATE OR ALTER PROCEDURE concesiones.Empresa_Eliminar
+    @id_empresa INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF NOT EXISTS (SELECT 1 FROM concesiones.Empresa WHERE id_empresa = @id_empresa)
+        SET @v_errores = @v_errores + 'La empresa no existe. ';
+
+    IF EXISTS (SELECT 1 FROM concesiones.Empresa where id_empresa = @id_empresa AND estado = 1)
+        SET @v_errores = @v_errores + 'La empresa ya está deshabilitada. ';
     
-    SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.Concesion WHERE id_concesion = @id_concesion AND estado = 0)
-        SET @v_errores = @v_errores + 'La concesión no existe o está inactiva. ';
-
-    IF @fecha_pago IS NULL
-        SET @v_errores = @v_errores + 'La fecha de pago es obligatoria. ';
-
-    IF @periodo IS NULL
-        SET @v_errores = @v_errores + 'El período es obligatorio. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_concesion = @id_concesion AND periodo = @periodo)
-        SET @v_errores = @v_errores + 'Ya existe un pago para este período. ';
-
-    -- Cambiar por mayor o igual a 0 si se permiten pagos de $0
-    IF @monto IS NULL OR @monto <= 0
-        SET @v_errores = @v_errores + 'El monto es obligatorio y debe ser positivo. ';
-
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
 
-    INSERT INTO concesiones.PagoConcesion (id_concesion, fecha_pago, periodo, monto)
-    VALUES (@id_concesion, @fecha_pago, @periodo, @monto);
-END
-GO
+    UPDATE concesiones.Empresa SET estado = 1 WHERE id_empresa = @id_empresa;
 
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Modificar
-    @id_pago INT,
-    @fecha_pago DATE = NULL,
-    @periodo DATE = NULL,
-    @monto DECIMAL(18, 2) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
-        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
-
-    IF @monto IS NOT NULL AND @monto <= 0
-        SET @v_errores = @v_errores + 'El monto debe ser positivo. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    IF @fecha_pago IS NOT NULL
-        UPDATE concesiones.PagoConcesion
-        SET fecha_pago = @fecha_pago
-        WHERE id_pago = @id_pago;
-
-    IF @periodo IS NOT NULL
-    BEGIN
-        SET @periodo = DATEFROMPARTS(YEAR(@periodo), MONTH(@periodo), 1);
-        UPDATE concesiones.PagoConcesion
-        SET periodo = @periodo
-        WHERE id_pago = @id_pago;
-    END
-
-    IF @monto IS NOT NULL
-        UPDATE concesiones.PagoConcesion
-        SET monto = @monto  
-        WHERE id_pago = @id_pago;
-END
-GO
-
-CREATE OR ALTER PROCEDURE concesiones.PagoConcesion_Eliminar
-    @id_pago INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF NOT EXISTS (SELECT 1 FROM concesiones.PagoConcesion WHERE id_pago = @id_pago)
-        SET @v_errores = @v_errores + 'El pago de concesión no existe. ';
-
-    IF EXISTS (SELECT 1 FROM concesiones.PagoConcesion where id_pago = @id_pago AND estado = 1)
-        SET @v_errores = @v_errores + 'El pago de concesión ya está deshabilitado. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE concesiones.PagoConcesion SET estado = 1 WHERE id_pago = @id_pago;
 END
 GO
 
@@ -354,90 +352,6 @@ GO
 
 --               ABM DE VENTAS
 
--- TiposVisitante
-
-CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Nuevo    --	ALTA
-    @descripcion VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF @descripcion IS NULL OR LTRIM(RTRIM(@descripcion)) = ''
-        SET @v_errores += 'La descripcion es obligatoria. ';
-    
-    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE descripcion = @descripcion)
-        SET @v_errores += 'Ya existe un tipo de visitante con esa descripcion. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO ventas.TipoVisitante (descripcion)
-    VALUES (@descripcion);
-END
-GO
-
-CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Modificar    --	MODIFICACION
-    @id_tipo_visitante INT,
-    @descripcion VARCHAR(50)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante AND estado = 1)
-        SET @v_errores += 'El tipo de visitante está dado de baja. ';
-
-    IF NOT EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante)
-        SET @v_errores += 'El tipo de visitante no existe. ';
-
-    IF @descripcion IS NULL OR LTRIM(RTRIM(@descripcion)) = ''
-        SET @v_errores += 'La descripcion es obligatoria. ';
-    
-    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE descripcion = @descripcion AND id_tipo_visitante <> @id_tipo_visitante)
-        SET @v_errores += 'Otro tipo de visitante ya usa esa descripcion. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE ventas.TipoVisitante SET descripcion = @descripcion WHERE id_tipo_visitante = @id_tipo_visitante;
-END
-GO
-
-CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Eliminar    --	BAJA
-    @id_tipo_visitante INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-
-    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante AND estado = 1)
-        SET @v_errores += 'El tipo de visitante ya está dado de baja. ';
-
-    IF NOT EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante)
-        SET @v_errores += 'El tipo de visitante no existe. ';
-
-    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_tipo_visitante = @id_tipo_visitante)
-        SET @v_errores += 'No se puede eliminar: el tipo de visitante tiene precios asociados. ';
-
-    --IF EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_tipo_visitante = @id_tipo_visitante)
-    --    SET @v_errores += 'No se puede eliminar: el tipo de visitante tiene tickets registrados. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    UPDATE ventas.TipoVisitante SET estado = 1 WHERE id_tipo_visitante = @id_tipo_visitante;
-END
-GO
 
 -- PreciosEntrada
 
@@ -561,6 +475,90 @@ BEGIN
 END
 GO
 
+-- TiposVisitante
+
+CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Nuevo    --	ALTA
+    @descripcion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF @descripcion IS NULL OR LTRIM(RTRIM(@descripcion)) = ''
+        SET @v_errores += 'La descripcion es obligatoria. ';
+    
+    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE descripcion = @descripcion)
+        SET @v_errores += 'Ya existe un tipo de visitante con esa descripcion. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO ventas.TipoVisitante (descripcion)
+    VALUES (@descripcion);
+END
+GO
+
+CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Modificar    --	MODIFICACION
+    @id_tipo_visitante INT,
+    @descripcion VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante AND estado = 1)
+        SET @v_errores += 'El tipo de visitante está dado de baja. ';
+
+    IF NOT EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante)
+        SET @v_errores += 'El tipo de visitante no existe. ';
+
+    IF @descripcion IS NULL OR LTRIM(RTRIM(@descripcion)) = ''
+        SET @v_errores += 'La descripcion es obligatoria. ';
+    
+    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE descripcion = @descripcion AND id_tipo_visitante <> @id_tipo_visitante)
+        SET @v_errores += 'Otro tipo de visitante ya usa esa descripcion. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    UPDATE ventas.TipoVisitante SET descripcion = @descripcion WHERE id_tipo_visitante = @id_tipo_visitante;
+END
+GO
+
+CREATE OR ALTER PROCEDURE ventas.TipoVisitante_Eliminar    --	BAJA
+    @id_tipo_visitante INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    IF EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante AND estado = 1)
+        SET @v_errores += 'El tipo de visitante ya está dado de baja. ';
+
+    IF NOT EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE id_tipo_visitante = @id_tipo_visitante)
+        SET @v_errores += 'El tipo de visitante no existe. ';
+
+    IF EXISTS (SELECT 1 FROM ventas.PrecioEntrada WHERE id_tipo_visitante = @id_tipo_visitante)
+        SET @v_errores += 'No se puede eliminar: el tipo de visitante tiene precios asociados. ';
+
+    --IF EXISTS (SELECT 1 FROM ventas.Ticket WHERE id_tipo_visitante = @id_tipo_visitante)
+    --    SET @v_errores += 'No se puede eliminar: el tipo de visitante tiene tickets registrados. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    UPDATE ventas.TipoVisitante SET estado = 1 WHERE id_tipo_visitante = @id_tipo_visitante;
+END
+GO
 
 --====================================================================================
 --									ABM TiposDeParques
@@ -1177,141 +1175,9 @@ BEGIN
 END
 GO
 
----------------------------------------------------------------------------
+
 -------------------------------- Personal----------------------------------
 ---------------------------------------------------------------------------
----------------------------------------------------------------------------
--------------------------------- Personal----------------------------------
----------------------------------------------------------------------------
----------------------------- ABM Asignaciones -----------------------------
----------------------------------------------------------------------------
--- Alta
-CREATE OR ALTER PROCEDURE personal.asignacionGP_alta
-    @id_guardaparque int,
-    @id_parque int,
-    @id_guia int,
-    @fecha_desde date,
-    @fecha_hasta date,
-    @motivo varchar(255)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    
-    IF @id_parque IS NULL
-        SET @v_errores += 'La id del parque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
-            set @v_errores += 'No existe el parque seleccionado. ';
-    IF @id_guardaparque IS NULL
-        SET @v_errores += 'La id del guardaparque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
-            set @v_errores += 'No existe el guardaparque seleccionado. ';
-    IF @id_guia IS not NULL
-        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
-            set @v_errores += 'No existe el guía seleccionado. ';
-    IF @fecha_desde IS NULL
-        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
-
-    IF EXISTS (SELECT 1 FROM personal.AsignacionGP WHERE id_guardaparque = @id_guardaparque and id_parque = @id_parque and fecha_desde = @fecha_desde)
-        SET @v_errores += 'Ya existe la asignación del guardaparque en este parque para la fecha indicada. ';
-            
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO personal.AsignacionGP(id_guardaparque, id_parque, id_guia, fecha_desde, fecha_hasta, motivo)
-    VALUES (@id_guardaparque, @id_parque, @id_guia, @fecha_desde, @fecha_hasta, @motivo);
-END
-GO
--- Baja
-CREATE OR ALTER PROCEDURE personal.asignacionGP_baja
-    @id_asignacion int
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    declare @fecha_hasta date;
-    
-    IF NOT EXISTS (select 1 from personal.AsignacionGP where id_asignacion = @id_asignacion)
-        SET @v_errores += 'No se encontró la asignación solicitada. ';
-/*
-    IF @id_parque IS NULL
-        SET @v_errores += 'La id del parque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
-            set @v_errores += 'No existe el parque seleccionado. ';
-
-    IF @fecha_desde IS NULL
-        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
-    
-    IF @id_guardaparque IS NULL
-        SET @v_errores += 'La id del guardaparque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
-            set @v_errores += 'No existe el guardaparque seleccionado. ';
-    IF @id_guia IS not NULL
-        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
-            set @v_errores += 'No existe el guía seleccionado. ';
-   
-
-    IF EXISTS (SELECT 1 FROM personal.AsignacionGP WHERE id_guardaparque = @id_guardaparque and id_parque = @id_parque and fecha_desde = @fecha_desde)
-        SET @v_errores += 'Ya existe la asignación del guardaparque en este parque para la fecha indicada. ';
-  */          
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-    set @fecha_hasta = GETDATE();
-    UPDATE personal.AsignacionGP SET fecha_hasta = @fecha_hasta where id_asignacion = @id_asignacion
-END
-GO
--- Modificación
-CREATE OR ALTER PROCEDURE personal.asignacionGP_modificacion
-    @id_asignacion int,
-    @id_guardaparque int,
-    @id_parque int,
-    @id_guia int,
-    @fecha_desde date,
-    @fecha_hasta date,
-    @motivo varchar(255)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    
-    IF NOT EXISTS (select 1 from personal.AsignacionGP where id_asignacion = @id_asignacion)
-        SET @v_errores += 'No se encontró la asignación solicitada. ';
-
-    IF @id_parque IS NULL
-        SET @v_errores += 'La id del parque es obligatoria. ';
-    ELSE
-        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
-            set @v_errores += 'No existe el parque seleccionado. ';
-
-    IF @fecha_desde IS NULL
-        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
-
-    IF @id_guardaparque IS NULL
-        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
-            set @v_errores += 'No existe el guardaparque seleccionado. ';
-    
-    IF @id_guia IS not NULL
-        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
-            set @v_errores += 'No existe el guía seleccionado. ';  
-         
-    IF @v_errores <> ''
-    BEGIN
-        RAISERROR(@v_errores, 16, 1);
-        RETURN;
-    END
-    UPDATE personal.AsignacionGP SET id_guardaparque = @id_guardaparque, id_parque = @id_parque, id_guia = @id_guia, fecha_desde = @fecha_desde, fecha_hasta = @fecha_hasta, motivo = @motivo where id_asignacion = @id_asignacion
-END
-GO
 
 ---------------------------------------------------------------------------
 --------------------------- ABM Guardaparques -----------------------------
@@ -1566,5 +1432,112 @@ BEGIN
         vigencia_desde  = @vigencia_desde,
         vigencia_hasta  = @vigencia_hasta
     WHERE id_guia = @id_guia;
+END
+GO
+---------------------------- ABM Asignaciones -----------------------------
+---------------------------------------------------------------------------
+-- Alta
+CREATE OR ALTER PROCEDURE personal.asignacionGP_alta
+    @id_guardaparque int,
+    @id_parque int,
+    @id_guia int,
+    @fecha_desde date,
+    @fecha_hasta date,
+    @motivo varchar(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+    
+    IF @id_parque IS NULL
+        SET @v_errores += 'La id del parque es obligatoria. ';
+    ELSE
+        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
+            set @v_errores += 'No existe el parque seleccionado. ';
+    IF @id_guardaparque IS NULL
+        SET @v_errores += 'La id del guardaparque es obligatoria. ';
+    ELSE
+        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
+            set @v_errores += 'No existe el guardaparque seleccionado. ';
+    IF @id_guia IS not NULL
+        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
+            set @v_errores += 'No existe el guía seleccionado. ';
+    IF @fecha_desde IS NULL
+        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
+
+    IF EXISTS (SELECT 1 FROM personal.AsignacionGP WHERE id_guardaparque = @id_guardaparque and id_parque = @id_parque and fecha_desde = @fecha_desde)
+        SET @v_errores += 'Ya existe la asignación del guardaparque en este parque para la fecha indicada. ';
+            
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO personal.AsignacionGP(id_guardaparque, id_parque, id_guia, fecha_desde, fecha_hasta, motivo)
+    VALUES (@id_guardaparque, @id_parque, @id_guia, @fecha_desde, @fecha_hasta, @motivo);
+END
+GO
+-- Baja
+CREATE OR ALTER PROCEDURE personal.asignacionGP_baja
+    @id_asignacion int
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+    declare @fecha_hasta date;
+    
+    IF NOT EXISTS (select 1 from personal.AsignacionGP where id_asignacion = @id_asignacion)
+        SET @v_errores += 'No se encontró la asignación solicitada. ';
+     
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+    set @fecha_hasta = GETDATE();
+    UPDATE personal.AsignacionGP SET fecha_hasta = @fecha_hasta where id_asignacion = @id_asignacion
+END
+GO
+-- Modificación
+CREATE OR ALTER PROCEDURE personal.asignacionGP_modificacion
+    @id_asignacion int,
+    @id_guardaparque int,
+    @id_parque int,
+    @id_guia int,
+    @fecha_desde date,
+    @fecha_hasta date,
+    @motivo varchar(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+    
+    IF NOT EXISTS (select 1 from personal.AsignacionGP where id_asignacion = @id_asignacion)
+        SET @v_errores += 'No se encontró la asignación solicitada. ';
+
+    IF @id_parque IS NULL
+        SET @v_errores += 'La id del parque es obligatoria. ';
+    ELSE
+        IF not exists (select 1 from parques.Parque where id_parque = @id_parque)
+            set @v_errores += 'No existe el parque seleccionado. ';
+
+    IF @fecha_desde IS NULL
+        SET @v_errores += 'La fecha de comienzo es obligatoria. ';
+
+    IF @id_guardaparque IS NULL
+        IF not exists (select 1 from personal.Guardaparque where id_guardaparque = @id_guardaparque)
+            set @v_errores += 'No existe el guardaparque seleccionado. ';
+    
+    IF @id_guia IS not NULL
+        IF not exists (select 1 from personal.GuiaAutorizado where id_guia = @id_guia)
+            set @v_errores += 'No existe el guía seleccionado. ';  
+         
+    IF @v_errores <> ''
+    BEGIN
+        RAISERROR(@v_errores, 16, 1);
+        RETURN;
+    END
+    UPDATE personal.AsignacionGP SET id_guardaparque = @id_guardaparque, id_parque = @id_parque, id_guia = @id_guia, fecha_desde = @fecha_desde, fecha_hasta = @fecha_hasta, motivo = @motivo where id_asignacion = @id_asignacion
 END
 GO
