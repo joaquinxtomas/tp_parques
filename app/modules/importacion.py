@@ -25,7 +25,10 @@ def _importar_kml():
     ruta = input_str("Ruta del archivo en el servidor (ej. C:\\datos\\parques.kml): ")
     ruta = ruta.strip('"').strip("'")
     print("  Procesando, aguardá...")
-    exec_import("EXEC importacion.ImportarParquesKML @ruta_archivo=?", (ruta,))
+    success, msg = exec_import("EXEC importacion.ImportarParquesKML @ruta_archivo=?", (ruta,))
+    if not success:
+        err(msg)
+        return
     _mostrar_resultado_import('SIB_KML')
 
 
@@ -35,7 +38,10 @@ def _importar_csv():
     ruta = input_str("Ruta del archivo en el servidor (ej. C:\\datos\\visitas.csv): ")
     ruta = ruta.strip('"').strip("'")
     print("  Procesando, aguardá...")
-    exec_import("EXEC importacion.ImportarVisitasCSV @ruta_archivo=?", (ruta,))
+    success, msg = exec_import("EXEC importacion.ImportarVisitasCSV @ruta_archivo=?", (ruta,))
+    if not success:
+        err(msg)
+        return
     _mostrar_resultado_import('YVERA_VISITAS')
 
 

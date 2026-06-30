@@ -1,4 +1,4 @@
-from db import exec_sp, fetch, print_table, input_int, input_str, ok, err
+from db import exec_sp, fetch, print_table, input_int, input_float, input_str, ok, err
 
 
 def menu():
@@ -96,7 +96,7 @@ def _concesion_nueva():
     tipo  = input_str("Tipo de actividad: ")
     f_ini = input_str("Fecha inicio (YYYY-MM-DD): ")
     f_fin = input_str("Fecha fin    (YYYY-MM-DD, vacío=sin vencimiento): ", allow_empty=True)
-    valor = float(input("Valor alquiler mensual: ").strip())
+    valor = input_float("Valor alquiler mensual: ")
     success, msg = exec_sp(
         "EXEC concesiones.Concesion_Nueva @id_empresa=?, @id_parque=?, @tipo_actividad=?, @fecha_inicio=?, @fecha_fin=?, @valor_alquiler=?",
         (id_e, id_p, tipo, f_ini, f_fin, valor)
@@ -109,7 +109,7 @@ def _concesion_modificar():
     id_c  = input_int("ID concesión a modificar: ")
     f_ini = input_str("Nueva fecha inicio (YYYY-MM-DD): ")
     f_fin = input_str("Nueva fecha fin    (YYYY-MM-DD, vacío=sin vencimiento): ", allow_empty=True)
-    valor = float(input("Nuevo valor alquiler: ").strip())
+    valor = input_float("Nuevo valor alquiler: ")
     success, msg = exec_sp(
         "EXEC concesiones.Concesion_Modificar @id_concesion=?, @fecha_inicio=?, @fecha_fin=?, @valor_alquiler=?",
         (id_c, f_ini, f_fin, valor)
@@ -143,7 +143,7 @@ def _pago_nuevo():
     id_c    = input_int("ID concesión: ")
     periodo = input_str("Período (YYYY-MM-DD, cualquier día del mes): ")
     f_pago  = input_str("Fecha de pago (YYYY-MM-DD): ")
-    monto   = float(input("Monto: ").strip())
+    monto   = input_float("Monto: ")
     success, msg = exec_sp(
         "EXEC concesiones.PagoConcesion_Nuevo @id_concesion=?, @periodo=?, @fecha_pago=?, @monto=?",
         (id_c, periodo, f_pago, monto)
@@ -154,7 +154,7 @@ def _pago_nuevo():
 def _pago_modificar():
     _ver_pagos()
     id_p   = input_int("ID pago a modificar: ")
-    monto  = float(input("Nuevo monto: ").strip())
+    monto  = input_float("Nuevo monto: ")
     f_pago = input_str("Nueva fecha de pago (YYYY-MM-DD): ")
     success, msg = exec_sp(
         "EXEC concesiones.PagoConcesion_Modificar @id_pago=?, @monto=?, @fecha_pago=?",

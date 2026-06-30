@@ -1,4 +1,4 @@
-from db import exec_sp, fetch, print_table, input_int, input_str, ok, err
+from db import exec_sp, fetch, print_table, input_int, input_float, input_str, ok, err
 
 
 def menu():
@@ -44,7 +44,7 @@ def _atraccion_nueva():
     nombre = input_str("Nombre: ")
     print("  Tipos: paga / gratuita")
     tipo  = input_str("Tipo: ")
-    costo = float(input("Costo: ").strip())
+    costo = input_float("Costo: ")
     dur   = input("Duración en minutos (vacío=sin límite): ").strip()
     cupo  = input("Cupo máximo (vacío=sin límite): ").strip()
     turno = input_str("Horario del turno (HH:MM): ")
@@ -61,7 +61,7 @@ def _atraccion_modificar():
     nombre = input_str("Nuevo nombre: ")
     print("  Tipos: paga / gratuita")
     tipo   = input_str("Tipo: ")
-    costo  = float(input("Nuevo costo: ").strip())
+    costo  = input_float("Nuevo costo: ")
     dur    = input("Nueva duración en minutos (vacío=sin límite): ").strip()
     cupo   = input("Nuevo cupo máximo (vacío=sin límite): ").strip()
     success, msg = exec_sp(
