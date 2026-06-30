@@ -143,6 +143,22 @@ BEGIN
     IF @valor_alquiler IS NULL OR @valor_alquiler <= 0
         SET @v_errores = @v_errores + 'El valor del alquiler es obligatorio y debe ser positivo. ';
 
+	    -- VALIDACIÓN DE DUPLICADOS: misma empresa, mismo parque, mismo tipo de actividad, fechas superpuestas
+    IF EXISTS (
+        SELECT 1 
+        FROM concesiones.Concesion 
+        WHERE id_empresa = @id_empresa 
+          AND id_parque = @id_parque 
+          AND tipo_actividad = @tipo_actividad
+          AND estado = 0  -- solo concesiones activas
+          AND (
+              -- fechas se superponen
+              (@fecha_inicio BETWEEN fecha_inicio AND ISNULL(fecha_fin, '9999-12-31'))
+              OR (ISNULL(@fecha_fin, '9999-12-31') BETWEEN fecha_inicio AND ISNULL(fecha_fin, '9999-12-31'))
+              OR (fecha_inicio BETWEEN @fecha_inicio AND ISNULL(@fecha_fin, '9999-12-31'))
+          )
+    )
+        SET @v_errores = @v_errores + 'Ya existe una concesión activa para la misma empresa, parque y tipo de actividad con fechas superpuestas. ';
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
