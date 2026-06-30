@@ -100,8 +100,6 @@ GO
 EXEC importacion.ImportarVisitasCSV
     @ruta_archivo = 'C:\datasets finales\areas_protegidas.csv';
 
-SELECT * FROM ventas.TicketVisitante
-
 -- 2. check de tablas de entrada y ticket visitante y sus cantidades
 SELECT DISTINCT tv.id_tipo_visitante, t.descripcion FROM ventas.TicketVisitante tv
 INNER JOIN ventas.TipoVisitante t ON tv.id_tipo_visitante = t.id_tipo_visitante 
@@ -163,10 +161,9 @@ DECLARE @ultimo_log INT =(
 	WHERE tipo_archivo = 'yvera_visitas'
 )
 
-SELECT motivo, COUNT(*) AS cantidad
+SELECT *
 FROM importacion.ErroresImportacion
 WHERE id_log = @ultimo_log
-GROUP BY motivo;
 GO
 
 -- 8. test con archivo que no existe
@@ -180,7 +177,7 @@ ORDER BY id_log DESC
 -- 9. test sin tipos de visitante cargados 
 BEGIN TRANSACTION test_tipos_faltantes;
 
-UPDATE ventas.tipoVisitante SET descripcion = 'testeo' WHERE descripcion = 'Residente';
+UPDATE ventas.tipoVisitante SET descripcion = 'testeo' WHERE descripcion = 'Adulto';
 
 DECLARE @entradas_antes INT = (SELECT COUNT(*) FROM ventas.Entrada WHERE origen = 'importado');
 
@@ -188,11 +185,11 @@ EXEC importacion.ImportarVisitasCSV
      @ruta_archivo = 'c:\datasets finales\areas_protegidas.csv';
 
 SELECT TOP 1 * FROM importacion.LogImportacion
-WHERE tipo_Archivo = 'yvera_visitas'
+WHERE tipo_archivo = 'YVERA_VISITAS'
 ORDER BY id_log DESC;
 
-SELECT COUNT(*) as entradas_despues, @entradas_antes AS entradas_antes
-FROM ventas.Entrada WHERE origen ='importado';
+SELECT COUNT(*) AS entradas_despues, @entradas_antes AS entradas_antes
+FROM ventas.Entrada WHERE origen = 'IMPORTADO';
 
 ROLLBACK TRANSACTION test_tipos_faltantes;
 GO
