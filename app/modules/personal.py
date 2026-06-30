@@ -25,7 +25,7 @@ def menu():
 
 def _ver_guias():
     cols, rows = fetch("""
-        SELECT id_guia, nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, activo
+        SELECT id_guia, nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, estado
         FROM   personal.GuiaAutorizado
         ORDER  BY id_guia
     """)
@@ -97,5 +97,5 @@ def _ver_parques():
 
 
 def _ver_guias():
-    cols, rows = fetch("SELECT id_guia, nombre FROM personal.GuiaAutorizado WHERE activo = 1 ORDER BY id_guia")
+    cols, rows = fetch("SELECT id_guia, nombre FROM personal.GuiaAutorizado WHERE estado = 0 ORDER BY id_guia")
     print_table(cols, rows)

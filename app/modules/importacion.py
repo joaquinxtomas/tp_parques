@@ -1,15 +1,12 @@
-import configparser
-import os
-import pyodbc
-from db import fetch, print_table, input_str, ok, err
+from db import exec_import, fetch, print_table, input_str, ok, err
 
 
 def menu():
     opciones = {
-        "1": ("Importar parques desde KML",       _importar_kml),
-        "2": ("Importar visitas desde CSV",        _importar_csv),
-        "3": ("Ver log de importaciones",          _ver_log),
-        "0": ("Volver",                            None),
+        "1": ("Importar parques desde KML",  _importar_kml),
+        "2": ("Importar visitas desde CSV",   _importar_csv),
+        "3": ("Ver log de importaciones",     _ver_log),
+        "0": ("Volver",                       None),
     }
     while True:
         print("\n--- IMPORTACIÓN ---")
@@ -24,67 +21,51 @@ def menu():
 
 def _importar_kml():
     print("  El archivo KML debe ser accesible desde el servidor SQL.")
+    print("  No incluir comillas en la ruta.")
     ruta = input_str("Ruta del archivo en el servidor (ej. C:\\datos\\parques.kml): ")
-    conn = _get_impor_conn()
-    if conn is None:
-        return
-    cursor = conn.cursor()
-    try:
-        cursor.execute("EXEC importacion.ImportarParquesKML @ruta_archivo=?", (ruta,))
-        conn.commit()
-        ok("Importación KML completada.")
-        _ver_log()
-    except pyodbc.Error as e:
-        msg = str(e)
-        if '[SQL Server]' in msg:
-            msg = msg.split('[SQL Server]')[-1].split('(')[0].strip()
-        err(msg)
+    ruta = ruta.strip('"').strip("'")
+    print("  Procesando, aguardá...")
+    exec_import("EXEC importacion.ImportarParquesKML @ruta_archivo=?", (ruta,))
+    _mostrar_resultado_import('SIB_KML')
 
 
 def _importar_csv():
     print("  El archivo CSV debe ser accesible desde el servidor SQL.")
+    print("  No incluir comillas en la ruta.")
     ruta = input_str("Ruta del archivo en el servidor (ej. C:\\datos\\visitas.csv): ")
-    conn = _get_impor_conn()
-    if conn is None:
+    ruta = ruta.strip('"').strip("'")
+    print("  Procesando, aguardá...")
+    exec_import("EXEC importacion.ImportarVisitasCSV @ruta_archivo=?", (ruta,))
+    _mostrar_resultado_import('YVERA_VISITAS')
+
+
+def _mostrar_resultado_import(tipo):
+    """Lee el último registro del log para ese tipo y reporta éxito o error."""
+    cols, rows = fetch(
+        "SELECT TOP 1 detalle, errores, registros_ok "
+        "FROM importacion.LogImportacion "
+        "WHERE tipo_archivo = ? "
+        "ORDER BY id_log DESC",
+        (tipo,)
+    )
+    if not rows:
+        err("No se encontró registro en el log.")
         return
-    cursor = conn.cursor()
-    try:
-        cursor.execute("EXEC importacion.ImportarVisitasCSV @ruta_archivo=?", (ruta,))
-        conn.commit()
-        ok("Importación CSV completada.")
-        _ver_log()
-    except pyodbc.Error as e:
-        msg = str(e)
-        if '[SQL Server]' in msg:
-            msg = msg.split('[SQL Server]')[-1].split('(')[0].strip()
-        err(msg)
+    detalle, errores, registros_ok = rows[0]
+    if detalle and detalle.startswith('Error'):
+        err(detalle)
+    elif detalle == 'En proceso':
+        err("El proceso no finalizó correctamente.")
+    else:
+        ok(f"Completado — {detalle}")
+    _ver_log()
 
 
 def _ver_log():
     cols, rows = fetch("""
-        SELECT TOP 20 id_log, tipo_archivo, fecha_proceso,
-                      leidos, insertados, actualizados, errores
+        SELECT TOP 20 id_log, tipo_archivo, nombre_archivo, fecha,
+                      registros_ok, errores, detalle
         FROM   importacion.LogImportacion
         ORDER  BY id_log DESC
     """)
     print_table(cols, rows)
-
-
-def _get_impor_conn():
-    """Conexión separada con el usuario de importación (tiene permisos sobre el schema importacion)."""
-    cfg = configparser.ConfigParser()
-    cfg.read(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini'))
-    db = cfg['database']
-    try:
-        conn_str = (
-            f"DRIVER={{{db['driver']}}};"
-            f"SERVER={db['server']};"
-            f"DATABASE={db['database']};"
-            "UID=parques_impor;"
-            "PWD=Importacion#Parques2026!;"
-            "TrustServerCertificate=yes;"
-        )
-        return pyodbc.connect(conn_str, autocommit=False)
-    except pyodbc.Error as e:
-        err(f"No se pudo conectar con el usuario de importación: {e}")
-        return None

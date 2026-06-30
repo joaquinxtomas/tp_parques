@@ -1,3 +1,6 @@
+import datetime
+import math
+import api
 from db import exec_sp, fetch, print_table, input_int, input_str, ok, err
 
 
@@ -66,18 +69,27 @@ def _ver_precios():
         JOIN   ventas.TipoVisitante tv ON tv.id_tipo_visitante  = pe.id_tipo_visitante
         ORDER  BY pe.id_precio
     """)
+    dolar = api.get_dolar_oficial_venta()
+    if dolar is not None:
+        print(f"  Dólar oficial (venta): ${dolar:.2f}")
+        cols = list(cols) + ['precio_USD']
+        rows = [
+            list(row) + [f"~USD {math.ceil(row[3] / dolar)}" if row[2] == 'No residente' else '-']
+            for row in rows
+        ]
     print_table(cols, rows)
 
 
 def _precio_nuevo_normal():
     _ver_parques()
-    id_p  = input_int("ID parque: ")
+    id_p   = input_int("ID parque: ")
     _ver_tipos()
-    id_tv = input_int("ID tipo de visitante: ")
+    id_tv  = input_int("ID tipo de visitante: ")
     precio = float(input("Precio: ").strip())
+    f_ini  = input_str("Fecha de inicio de vigencia (YYYY-MM-DD): ")
     success, msg = exec_sp(
-        "EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque=?, @id_tipo_visitante=?, @precio=?",
-        (id_p, id_tv, precio)
+        "EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque=?, @id_tipo_visitante=?, @precio=?, @fecha_inicio=?",
+        (id_p, id_tv, precio, f_ini)
     )
     ok("Precio creado.") if success else err(msg)
 
@@ -119,42 +131,60 @@ def _precio_eliminar():
 
 def _entrada_nuevo():
     _ver_parques()
-    id_p       = input_int("ID parque: ")
-    pto_venta  = input_int("Punto de venta: ")
-    fecha      = input_str("Fecha y hora (YYYY-MM-DD HH:MM:SS): ")
+    id_p      = input_int("ID parque: ")
+    pto_venta = input_int("Punto de venta: ")
+    fecha     = input_str("Fecha y hora (YYYY-MM-DD HH:MM:SS): ")
+
+    recargo = 0
+    try:
+        if api.is_feriado(datetime.date.fromisoformat(fecha[:10])):
+            print("  AVISO: feriado — se aplica recargo del 20% (redondeo para arriba).")
+            recargo = 1
+    except Exception:
+        pass
+
     print("  Formas de pago: Efectivo / Débito / Crédito / Transferencia / QR")
     forma_pago = input_str("Forma de pago: ")
 
     _ver_tipos()
-    id_tipo_1   = input_int("ID tipo visitante 1: ")
-    cantidad_1  = input_int("Cantidad tipo 1: ")
+    id_tipo_1  = input_int("ID tipo visitante 1: ")
+    cantidad_1 = input_int("Cantidad tipo 1: ")
 
-    params = [id_p, pto_venta, fecha, forma_pago, id_tipo_1, cantidad_1]
-    sql    = "EXEC ventas.Entrada_Nuevo @id_parque=?, @pto_venta=?, @fecha=?, @forma_pago=?, @id_tipo_1=?, @cantidad_1=?"
+    sql    = ("EXEC ventas.Entrada_Nuevo "
+              "@id_parque=?, @pto_venta=?, @fecha=?, @forma_pago=?, "
+              "@id_tipo_1=?, @cantidad_1=?, @recargo_feriado=?")
+    params = [id_p, pto_venta, fecha, forma_pago, id_tipo_1, cantidad_1, recargo]
+    tipos_sel = [(id_tipo_1, cantidad_1)]
 
-    agregar = input("  ¿Agregar otro tipo de visitante? (s/n): ").strip().lower()
-    if agregar == "s":
-        id_tipo_2  = input_int("ID tipo visitante 2: ")
-        cantidad_2 = input_int("Cantidad tipo 2: ")
-        sql    += ", @id_tipo_2=?, @cantidad_2=?"
-        params += [id_tipo_2, cantidad_2]
+    for n in range(2, 6):
+        if input(f"  ¿Agregar tipo visitante {n}? (s/n): ").strip().lower() != "s":
+            break
+        id_t = input_int(f"ID tipo visitante {n}: ")
+        cant = input_int(f"Cantidad tipo {n}: ")
+        sql    += f", @id_tipo_{n}=?, @cantidad_{n}=?"
+        params += [id_t, cant]
+        tipos_sel.append((id_t, cant))
 
     success, msg = exec_sp(sql, tuple(params))
-    ok("Entrada registrada.") if success else err(msg)
+    if success:
+        ok("Entrada registrada.")
+        _mostrar_usd_no_residente(id_p, fecha[:10], tipos_sel, recargo)
+    else:
+        err(msg)
 
 
 def _ticket_eliminar():
     cols, rows = fetch("""
-        SELECT t.id_ticket, e.id_entrada, e.fecha, t.id_tipo_visitante, t.cantidad, t.subtotal, t.estado
-        FROM   ventas.Ticket      t
-        JOIN   ventas.Entrada     e ON e.id_entrada = t.id_entrada
-        WHERE  t.estado = 0
-        ORDER  BY t.id_ticket
+        SELECT e.id_entrada, p.nombre AS parque, e.fecha, e.forma_pago, e.total, e.estado
+        FROM   ventas.Entrada e
+        JOIN   parques.Parque p ON p.id_parque = e.id_parque
+        WHERE  e.estado = 0
+        ORDER  BY e.id_entrada
     """)
     print_table(cols, rows)
-    id_t = input_int("ID ticket a cancelar: ")
+    id_t = input_int("ID entrada a cancelar: ")
     success, msg = exec_sp("EXEC ventas.Ticket_Eliminar @id_ticket=?", (id_t,))
-    ok("Ticket cancelado.") if success else err(msg)
+    ok("Entrada cancelada.") if success else err(msg)
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -162,3 +192,40 @@ def _ticket_eliminar():
 def _ver_parques():
     cols, rows = fetch("SELECT id_parque, nombre FROM parques.Parque WHERE estado = 0 ORDER BY id_parque")
     print_table(cols, rows)
+
+
+def _mostrar_usd_no_residente(id_p, fecha_str, tipos_sel, recargo):
+    """Muestra el equivalente en USD para entradas de tipo 'No residente'."""
+    dolar = api.get_dolar_oficial_venta()
+    if dolar is None:
+        print("  AVISO: no se pudo obtener cotización del dólar oficial.")
+        return
+
+    ids = [t[0] for t in tipos_sel]
+    placeholders = ','.join('?' * len(ids))
+    cols, rows = fetch(
+        f"""SELECT tv.id_tipo_visitante, pe.precio
+            FROM   ventas.TipoVisitante tv
+            JOIN   ventas.PrecioEntrada pe
+                ON pe.id_tipo_visitante = tv.id_tipo_visitante
+               AND pe.id_parque    = ?
+               AND pe.fecha_inicio <= ?
+               AND (pe.fecha_fin IS NULL OR pe.fecha_fin >= ?)
+               AND pe.estado = 0
+            WHERE  tv.id_tipo_visitante IN ({placeholders})
+              AND  tv.descripcion = 'No residente'""",
+        (id_p, fecha_str, fecha_str) + tuple(ids)
+    )
+    if not rows:
+        return
+
+    for row in rows:
+        id_tipo      = row[0]
+        precio_ars   = float(row[1])
+        if recargo:
+            precio_ars = math.ceil(precio_ars * 1.2)
+        cant         = next((c for tid, c in tipos_sel if tid == id_tipo), 1)
+        precio_usd   = math.ceil(precio_ars / dolar)
+        print(f"  No residente: ${precio_ars:.0f} ARS/persona = "
+              f"USD {precio_usd}/persona × {cant} = USD {precio_usd * cant} "
+              f"(oficial ${dolar:.2f})")
