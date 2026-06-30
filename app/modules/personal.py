@@ -1,5 +1,7 @@
 from db import exec_sp, fetch, print_table, input_int, input_str, ok, err
 
+_CLAVE_CIFRADO = 'ClaveUltraSegura_123!'
+
 
 def menu():
     opciones = {
@@ -24,8 +26,10 @@ def menu():
 # ── Guías autorizados ──────────────────────────────────────────────────────────
 
 def _ver_guias():
-    cols, rows = fetch("""
-        SELECT id_guia, nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, estado
+    cols, rows = fetch(f"""
+        SELECT id_guia, nombre,
+               CONVERT(VARCHAR(10), DecryptByPassPhrase('{_CLAVE_CIFRADO}', dni)) AS dni,
+               especialidad, titulo, vigencia_desde, vigencia_hasta, estado
         FROM   personal.GuiaAutorizado
         ORDER  BY id_guia
     """)
@@ -49,8 +53,10 @@ def _guia_nuevo():
 # ── Guardaparques ──────────────────────────────────────────────────────────────
 
 def _ver_guardaparques():
-    cols, rows = fetch("""
-        SELECT id_guardaparque, nombre, dni, vigencia_desde, vigencia_hasta, activo
+    cols, rows = fetch(f"""
+        SELECT id_guardaparque, nombre,
+               CONVERT(VARCHAR(10), DecryptByPassPhrase('{_CLAVE_CIFRADO}', dni)) AS dni,
+               vigencia_desde, vigencia_hasta, activo
         FROM   personal.Guardaparque
         ORDER  BY id_guardaparque
     """)
@@ -77,7 +83,7 @@ def _asignacion_nueva():
     id_gp  = input_int("ID guardaparque (0=ninguno): ")
     _ver_parques()
     id_p   = input_int("ID parque: ")
-    _ver_guias()
+    _listar_guias()
     id_g   = input("ID guía (vacío=ninguno): ").strip()
     f_ini  = input_str("Fecha desde (YYYY-MM-DD): ")
     f_fin  = input_str("Fecha hasta (YYYY-MM-DD, vacío=indefinida): ", allow_empty=True)
@@ -96,6 +102,6 @@ def _ver_parques():
     print_table(cols, rows)
 
 
-def _ver_guias():
+def _listar_guias():
     cols, rows = fetch("SELECT id_guia, nombre FROM personal.GuiaAutorizado WHERE estado = 0 ORDER BY id_guia")
     print_table(cols, rows)

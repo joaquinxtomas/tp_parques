@@ -1,7 +1,7 @@
 import datetime
 import math
 import api
-from db import exec_sp, fetch, print_table, input_int, input_str, ok, err
+from db import exec_sp, fetch, print_table, input_int, input_float, input_str, ok, err
 
 
 def menu():
@@ -85,7 +85,7 @@ def _precio_nuevo_normal():
     id_p   = input_int("ID parque: ")
     _ver_tipos()
     id_tv  = input_int("ID tipo de visitante: ")
-    precio = float(input("Precio: ").strip())
+    precio = input_float("Precio: ")
     f_ini  = input_str("Fecha de inicio de vigencia (YYYY-MM-DD): ")
     success, msg = exec_sp(
         "EXEC ventas.PrecioEntrada_Nuevo_Normal @id_parque=?, @id_tipo_visitante=?, @precio=?, @fecha_inicio=?",
@@ -99,7 +99,7 @@ def _precio_nuevo_temporada():
     id_p   = input_int("ID parque: ")
     _ver_tipos()
     id_tv  = input_int("ID tipo de visitante: ")
-    precio = float(input("Precio: ").strip())
+    precio = input_float("Precio: ")
     f_ini  = input_str("Fecha inicio (YYYY-MM-DD): ")
     f_fin  = input_str("Fecha fin    (YYYY-MM-DD): ")
     success, msg = exec_sp(
@@ -112,7 +112,7 @@ def _precio_nuevo_temporada():
 def _precio_modificar():
     _ver_precios()
     id_pr  = input_int("ID precio a modificar: ")
-    precio = float(input("Nuevo precio: ").strip())
+    precio = input_float("Nuevo precio: ")
     success, msg = exec_sp(
         "EXEC ventas.PrecioEntrada_Modificar_Precio @id_precio=?, @precio=?",
         (id_pr, precio)

@@ -108,6 +108,15 @@ def input_int(prompt, allow_empty=False):
             print("  Ingrese un número entero.")
 
 
+def input_float(prompt):
+    while True:
+        val = input(prompt).strip()
+        try:
+            return float(val)
+        except ValueError:
+            print("  Ingrese un número válido.")
+
+
 def input_str(prompt, allow_empty=False):
     while True:
         val = input(prompt).strip()
