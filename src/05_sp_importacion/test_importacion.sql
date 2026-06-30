@@ -9,7 +9,7 @@ EXEC importacion.ImportarParquesKML
 go
 
 -- 2. Verificar resultado
-SELECT * FROM parques.Parque;
+SELECT * FROM parques.Parque
 SELECT * FROM parques.TipoParque
 SELECT COUNT(*) FROM parques.Parque;
 SELECT COUNT(*) FROM parques.TipoParque;
@@ -94,49 +94,11 @@ GO
 -----------------------------------------------------------------------------------------
 -- TESTING IMPORTACION CSV
 
---PRECONDICIONES (tienen que estar los tipos de visitante cargados)
-EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Adulto';
-EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Estudiante';
-EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Jubilado';
-EXEC ventas.TipoVisitante_Nuevo @descripcion = 'Discapacitado';
-EXEC ventas.TipoVisitante_Nuevo @descripcion = 'No residente';
-
---  Definir precios fijos por tipo de visitante
-DECLARE @precios_test TABLE (
-    id_tipo_visitante INT PRIMARY KEY,
-    precio DECIMAL(10,2)
-);
-
-INSERT INTO @precios_test VALUES
-    (1, 1500.00),  -- Adulto
-    (2, 800.00),   -- Menor
-    (3, 1200.00),  -- Jubilado
-    (4, 0.00);     -- Bebé / Discapacitado
-
---  Insertar para TODOS los parques
-INSERT INTO ventas.PrecioEntrada (id_parque, id_tipo_visitante, precio, fecha_inicio, fecha_fin)
-SELECT 
-    p.id_parque,
-    pr.id_tipo_visitante,
-    pr.precio,
-    '2008-01-01' AS fecha_inicio,   -- cubre todo el histórico
-    '2026-12-31' AS fecha_fin      
-FROM parques.Parque p
-CROSS JOIN @precios_test pr
-WHERE NOT EXISTS (
-    SELECT 1 
-    FROM ventas.PrecioEntrada pe 
-    WHERE pe.id_parque = p.id_parque 
-      AND pe.id_tipo_visitante = pr.id_tipo_visitante
-);
+--PRECONDICIONES (IMPORTACION DE PARQUES - DATA SEED)
 
 -- 1. ejecucion basica
 EXEC importacion.ImportarVisitasCSV
     @ruta_archivo = 'C:\datasets finales\areas_protegidas.csv';
-
-SELECT * FROM ventas.TicketVisitante tv
-INNER JOIN ventas.PrecioEntrada pe ON tv.id_tipo_visitante = pe.id_tipo_visitante
-WHERE tv.id_tipo_visitante = 5
 
 -- 2. check de tablas de entrada y ticket visitante y sus cantidades
 SELECT DISTINCT tv.id_tipo_visitante, t.descripcion FROM ventas.TicketVisitante tv
@@ -199,10 +161,9 @@ DECLARE @ultimo_log INT =(
 	WHERE tipo_archivo = 'yvera_visitas'
 )
 
-SELECT motivo, COUNT(*) AS cantidad
+SELECT *
 FROM importacion.ErroresImportacion
 WHERE id_log = @ultimo_log
-GROUP BY motivo;
 GO
 
 -- 8. test con archivo que no existe
@@ -216,7 +177,7 @@ ORDER BY id_log DESC
 -- 9. test sin tipos de visitante cargados 
 BEGIN TRANSACTION test_tipos_faltantes;
 
-UPDATE ventas.tipoVisitante SET descripcion = 'testeo' WHERE descripcion = 'Residente';
+UPDATE ventas.tipoVisitante SET descripcion = 'testeo' WHERE descripcion = 'Adulto';
 
 DECLARE @entradas_antes INT = (SELECT COUNT(*) FROM ventas.Entrada WHERE origen = 'importado');
 
@@ -224,11 +185,11 @@ EXEC importacion.ImportarVisitasCSV
      @ruta_archivo = 'c:\datasets finales\areas_protegidas.csv';
 
 SELECT TOP 1 * FROM importacion.LogImportacion
-WHERE tipo_Archivo = 'yvera_visitas'
+WHERE tipo_archivo = 'YVERA_VISITAS'
 ORDER BY id_log DESC;
 
-SELECT COUNT(*) as entradas_despues, @entradas_antes AS entradas_antes
-FROM ventas.Entrada WHERE origen ='importado';
+SELECT COUNT(*) AS entradas_despues, @entradas_antes AS entradas_antes
+FROM ventas.Entrada WHERE origen = 'IMPORTADO';
 
 ROLLBACK TRANSACTION test_tipos_faltantes;
 GO

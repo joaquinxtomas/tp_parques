@@ -143,6 +143,22 @@ BEGIN
     IF @valor_alquiler IS NULL OR @valor_alquiler <= 0
         SET @v_errores = @v_errores + 'El valor del alquiler es obligatorio y debe ser positivo. ';
 
+	    -- VALIDACIÓN DE DUPLICADOS: misma empresa, mismo parque, mismo tipo de actividad, fechas superpuestas
+    IF EXISTS (
+        SELECT 1 
+        FROM concesiones.Concesion 
+        WHERE id_empresa = @id_empresa 
+          AND id_parque = @id_parque 
+          AND tipo_actividad = @tipo_actividad
+          AND estado = 0  -- solo concesiones activas
+          AND (
+              -- fechas se superponen
+              (@fecha_inicio BETWEEN fecha_inicio AND ISNULL(fecha_fin, '9999-12-31'))
+              OR (ISNULL(@fecha_fin, '9999-12-31') BETWEEN fecha_inicio AND ISNULL(fecha_fin, '9999-12-31'))
+              OR (fecha_inicio BETWEEN @fecha_inicio AND ISNULL(@fecha_fin, '9999-12-31'))
+          )
+    )
+        SET @v_errores = @v_errores + 'Ya existe una concesión activa para la misma empresa, parque y tipo de actividad con fechas superpuestas. ';
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
@@ -977,7 +993,7 @@ CREATE OR ALTER PROCEDURE actividades.InsertarTourGuia
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores VARCHAR(2000) = '';
 
     IF @id_atraccion IS NULL
         SET @v_errores += 'El id de la atraccion es obligatorio. ';
@@ -994,7 +1010,7 @@ BEGIN
         SELECT 1 FROM personal.GuiaAutorizado
         WHERE id_guia = @id_guia
         AND vigencia_hasta IS NOT NULL
-        AND vigencia_desde <= vigencia_hasta
+        AND vigencia_hasta < CAST(GETDATE() AS DATE)
     )
         SET @v_errores += 'El guía no se encuentra en vigencia';
 
@@ -1019,7 +1035,6 @@ BEGIN
     END CATCH
 END
 GO
-
 
 --BAJA
 CREATE OR ALTER PROCEDURE actividades.EliminarTourGuia

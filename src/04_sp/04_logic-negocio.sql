@@ -26,7 +26,7 @@ CREATE OR ALTER PROCEDURE ventas.Entrada_Nuevo  --	ALTA ENTRADA
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores VARCHAR(2000) = '';
     DECLARE @total     DECIMAL(12,2) = 0;
     DECLARE @id_entrada INT;
 
@@ -203,7 +203,7 @@ CREATE OR ALTER PROCEDURE ventas.Ticket_Eliminar    --	BAJA TICKET
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores VARCHAR(2000) = '';
 
     IF NOT EXISTS (SELECT 1 FROM ventas.Entrada WHERE id_entrada = @id_ticket)
         SET @v_errores += 'El ticket no existe. ';
@@ -218,156 +218,6 @@ BEGIN
     END
     UPDATE ventas.Entrada SET estado = 1 WHERE id_entrada = @id_ticket;
 END
-GO
-
-
--- Entrada_Nuevo
-
--- CASO 28: parque inexistente → error
-BEGIN TRY
-    DECLARE @id_res INT = (SELECT id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    EXEC ventas.Entrada_Nuevo @id_parque = 9999, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Efectivo', @id_tipo_1 = @id_res, @cantidad_1 = 1;
-    PRINT 'CASO 28 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 28 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 29: forma de pago inválida → error
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Bitcoin', @id_tipo_1 = @id_res, @cantidad_1 = 1;
-    PRINT 'CASO 29 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 29 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 30: cantidad_1 = 0 → error
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Efectivo', @id_tipo_1 = @id_res, @cantidad_1 = 0;
-    PRINT 'CASO 30 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 30 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 31: tipo_1 inexistente → error
-BEGIN TRY
-    DECLARE @id_p INT = (SELECT id_parque FROM parques.Parque WHERE nombre = 'Nahuel Huapi');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Efectivo', @id_tipo_1 = 9999, @cantidad_1 = 1;
-    PRINT 'CASO 31 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 31 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 32: tipo_1 activo pero sin precio vigente para la fecha (Menor, precio dado de baja) → error
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_men INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Menor');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Efectivo', @id_tipo_1 = @id_men, @cantidad_1 = 1;
-    PRINT 'CASO 32 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 32 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 33: alta correcta con 1 tipo de visitante
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 10:00:00',
-        @forma_pago = 'Efectivo', @id_tipo_1 = @id_res, @cantidad_1 = 2;
-    PRINT 'CASO 33 OK: entrada con 1 tipo insertada (2 residentes)';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 33 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 34: tipo_2 sin precio vigente → error acumulado junto a tipo_1 válido
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    DECLARE @id_men INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Menor');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 11:00:00',
-        @forma_pago = 'Débito', @id_tipo_1 = @id_res, @cantidad_1 = 1, @id_tipo_2 = @id_men, @cantidad_2 = 1;
-    PRINT 'CASO 34 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 34 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 35: alta correcta con 2 tipos de visitante
-BEGIN TRY
-    DECLARE @id_p   INT = (SELECT id_parque          FROM parques.Parque       WHERE nombre      = 'Nahuel Huapi');
-    DECLARE @id_res INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Residente');
-    DECLARE @id_ext INT = (SELECT id_tipo_visitante   FROM ventas.TipoVisitante WHERE descripcion = 'Extranjero');
-    EXEC ventas.Entrada_Nuevo @id_parque = @id_p, @pto_venta = 1, @fecha = '2026-06-23 11:00:00',
-        @forma_pago = 'Crédito', @id_tipo_1 = @id_res, @cantidad_1 = 1, @id_tipo_2 = @id_ext, @cantidad_2 = 2;
-    PRINT 'CASO 35 OK: entrada con 2 tipos insertada';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 35 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
-GO
-
-SELECT e.id_entrada, e.nro_ticket, e.fecha, e.total, e.forma_pago,
-       tv.descripcion AS tipo_visitante, tv2.cantidad, tv2.precio_unit, tv2.subtotal
-FROM   ventas.Entrada e
-JOIN   ventas.TicketVisitante tv2 ON tv2.id_entrada = e.id_entrada
-JOIN   ventas.TipoVisitante   tv  ON tv.id_tipo_visitante = tv2.id_tipo_visitante
-ORDER BY e.id_entrada, tv.descripcion;
-GO
-
-
--- Ticket_Eliminar
-
--- CASO 36: ticket inexistente → error
-BEGIN TRY
-    EXEC ventas.Ticket_Eliminar @id_ticket = 9999;
-    PRINT 'CASO 36 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 36 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 37: baja correcta (primer ticket activo)
-BEGIN TRY
-    DECLARE @id_tk INT = (SELECT MIN(id_entrada) FROM ventas.Entrada WHERE estado = 0);
-    EXEC ventas.Ticket_Eliminar @id_ticket = @id_tk;
-    PRINT 'CASO 37 OK: ticket dado de baja';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 37 ERROR inesperado: ' + ERROR_MESSAGE();
-END CATCH
-GO
-
--- CASO 38: ya dado de baja → error
-BEGIN TRY
-    DECLARE @id_tk INT = (SELECT MIN(id_entrada) FROM ventas.Entrada WHERE estado = 1);
-    EXEC ventas.Ticket_Eliminar @id_ticket = @id_tk;
-    PRINT 'CASO 38 FALLO';
-END TRY
-BEGIN CATCH
-    PRINT 'CASO 38 OK (rechazo esperado): ' + ERROR_MESSAGE();
-END CATCH
 GO
 
 --====================================================================================

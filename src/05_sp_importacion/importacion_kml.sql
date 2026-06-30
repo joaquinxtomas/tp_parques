@@ -140,76 +140,91 @@ BEGIN
 		-- se usa LIKE %S% por que una coordenada en el archivo se ve asi: <SimpleData name="latitud">24° 42' 1,67" S</SimpleData>
 		-- S de SUR (SOUTH), siempre va a funcionar porque argentina está en esa ubicación
 		CASE 
-			WHEN s.lat_dms LIKE '%S%' THEN -1
-			WHEN s.lat_dms LIKE '%N%' THEN 1
-			ELSE -1
-		END *
-		(	
-			--CHARINDEX busca el símbolo ° en lat_dms y le resta 1
-			--SUBSTRING tiene 3 parametros, variable (texto) sobre la que trabaja, inicio y hasta donde.
-			-- en este contexto lee la variable lat_dms desde el inicio (1) hasta el simbolo °
-			TRY_CAST(TRIM(SUBSTRING(
-				s.lat_dms, 1, CHARINDEX('°', s.lat_dms) - 1
-			)) AS DECIMAL(9,6))
+		    WHEN s.lat_dms IS NOT NULL 
+			 AND CHARINDEX('°', s.lat_dms) > 0
+			 AND CHARINDEX(CHAR(39), s.lat_dms) > 0
+			 AND CHARINDEX('"', s.lat_dms) > 0
+			THEN
+				CASE 
+					WHEN s.lat_dms LIKE '%S%' THEN -1
+					WHEN s.lat_dms LIKE '%N%' THEN 1
+					ELSE -1
+				END *
+				(	
+					--CHARINDEX busca el símbolo ° en lat_dms y le resta 1
+					--SUBSTRING tiene 3 parametros, variable (texto) sobre la que trabaja, inicio y hasta donde.
+					-- en este contexto lee la variable lat_dms desde el inicio (1) hasta el simbolo °
+					TRY_CAST(TRIM(SUBSTRING(
+						s.lat_dms, 1, CHARINDEX('°', s.lat_dms) - 1
+					)) AS DECIMAL(9,6))
 
-			-- REPLACE está en caso de que haya una coma en lugar de un punto (robustece)
-			-- en este contexto SUBSTRING lee la variabla lat_dms desde el caracter siguiente al símbolo 
-			-- "°" hasta el caracter 39 que es el apóstrofe (mas legible de esta manera)
-			-- CHARINDEX(CHAR(39), lat_dms) - CHARINDEX('°',lat_dms)-1 da la cantidad de caracteres que debe 
-			-- moverse substring (no incluye ni '°' ni apóstrofe)
-			+ TRY_CAST(REPLACE(TRIM(SUBSTRING(
-				s.lat_dms,
-				CHARINDEX('°', s.lat_dms) + 1,
-				CHARINDEX(CHAR(39), s.lat_dms) - CHARINDEX ('°', s.lat_dms) - 1
-			)), ',','.') AS DECIMAL(9,6)) / 60.0
+					-- REPLACE está en caso de que haya una coma en lugar de un punto (robustece)
+					-- en este contexto SUBSTRING lee la variabla lat_dms desde el caracter siguiente al símbolo 
+					-- "°" hasta el caracter 39 que es el apóstrofe (mas legible de esta manera)
+					-- CHARINDEX(CHAR(39), lat_dms) - CHARINDEX('°',lat_dms)-1 da la cantidad de caracteres que debe 
+					-- moverse substring (no incluye ni '°' ni apóstrofe)
+					+ TRY_CAST(REPLACE(TRIM(SUBSTRING(
+						s.lat_dms,
+						CHARINDEX('°', s.lat_dms) + 1,
+						CHARINDEX(CHAR(39), s.lat_dms) - CHARINDEX ('°', s.lat_dms) - 1
+					)), ',','.') AS DECIMAL(9,6)) / 60.0
 
-			-- en este contexto SUBSTRING lee la variable lat_dms desde el siguiente caracter al apóstrofe
-			-- hasta llegar a las comillas (simbolo final en coordenadas), calcula la distancia con la resta
-			-- aclarada anteriormente, sin incluir ninguno de los dos simbolos.
-			+ TRY_CAST(REPLACE(TRIM(SUBSTRING(
-				s.lat_dms,
-				CHARINDEX(CHAR(39), s.lat_dms) + 1,
-				CHARINDEX('"', s.lat_dms) - CHARINDEX(CHAR(39), s.lat_dms) - 1
-			)), ',','.') AS DECIMAL(9,6)) / 3600.0
+					-- en este contexto SUBSTRING lee la variable lat_dms desde el siguiente caracter al apóstrofe
+					-- hasta llegar a las comillas (simbolo final en coordenadas), calcula la distancia con la resta
+					-- aclarada anteriormente, sin incluir ninguno de los dos simbolos.
+					+ TRY_CAST(REPLACE(TRIM(SUBSTRING(
+						s.lat_dms,
+						CHARINDEX(CHAR(39), s.lat_dms) + 1,
+						CHARINDEX('"', s.lat_dms) - CHARINDEX(CHAR(39), s.lat_dms) - 1
+					)), ',','.') AS DECIMAL(9,6)) / 3600.0
 
-		),
+				)
+			ELSE NULL
+		END,
+		
 		CASE 
-			WHEN s.lon_dms LIKE '%W%' THEN -1 
-			WHEN s.lon_dms LIKE '%O%' THEN -1
-			WHEN s.lon_dms LIKE '%E%' THEN 1
-			ELSE NULL 
-		END *
-		(
-			TRY_CAST(TRIM(SUBSTRING(
-				s.lon_dms,
-				1,
-				CHARINDEX('°', s.lon_dms) - 1
-			)) AS DECIMAL(9,6))
-			+
-			TRY_CAST(REPLACE(TRIM(SUBSTRING(
-				s.lon_dms,
-				CHARINDEX('°',s.lon_dms) + 1,
-				CHARINDEX(CHAR(39), s.lon_dms) - CHARINDEX('°', s.lon_dms) - 1
-			)), ',','.') AS DECIMAL(9,6)) / 60.0
-			+
-			TRY_CAST(REPLACE(TRIM(SUBSTRING(
-				s.lon_dms,
-				CHARINDEX(CHAR(39), s.lon_dms) + 1,
-				CHARINDEX('"', s.lon_dms) - CHARINDEX(CHAR(39), s.lon_dms) - 1
-			)), ',','.') AS DECIMAL(9,6)) /  3600.0
-		),
+			WHEN s.lon_dms IS NOT NULL
+			AND CHARINDEX('°', s.lon_dms) > 0
+			AND CHARINDEX(CHAR(39), s.lon_dms) > 0
+			AND CHARINDEX('"', s.lon_dms) > 0
+			THEN
+				CASE 
+					WHEN s.lon_dms LIKE '%W%' THEN -1 
+					WHEN s.lon_dms LIKE '%O%' THEN -1
+					WHEN s.lon_dms LIKE '%E%' THEN 1
+					ELSE NULL 
+				END *
+				(
+					TRY_CAST(TRIM(SUBSTRING(
+						s.lon_dms,
+						1,
+						CHARINDEX('°', s.lon_dms) - 1
+					)) AS DECIMAL(9,6))
+					+
+					TRY_CAST(REPLACE(TRIM(SUBSTRING(
+						s.lon_dms,
+						CHARINDEX('°',s.lon_dms) + 1,
+						CHARINDEX(CHAR(39), s.lon_dms) - CHARINDEX('°', s.lon_dms) - 1
+					)), ',','.') AS DECIMAL(9,6)) / 60.0
+					+
+					TRY_CAST(REPLACE(TRIM(SUBSTRING(
+						s.lon_dms,
+						CHARINDEX(CHAR(39), s.lon_dms) + 1,
+						CHARINDEX('"', s.lon_dms) - CHARINDEX(CHAR(39), s.lon_dms) - 1
+					)), ',','.') AS DECIMAL(9,6)) /  3600.0
+				)
+			ELSE NULL
+		END,
 		s.provincia,
 		s.region_dnc
 	FROM #staging s
 	WHERE s.nombre IS NOT NULL
-	AND s.lat_dms IS NOT NULL
-	AND s.lon_dms IS NOT NULL
-	AND CHARINDEX('°', s.lat_dms) > 0
-	AND CHARINDEX(CHAR(39), s.lat_dms) > 0
-	AND CHARINDEX('"', s.lat_dms) > 0
-	AND CHARINDEX('°', s.lon_dms) > 0
-	AND CHARINDEX(CHAR(39), s.lon_dms) > 0
-	AND CHARINDEX('"', s.lon_dms) > 0
+
+	-- si una coordenada falló, anular ambas
+	UPDATE #validos
+	SET latitud = NULL,
+		longitud = NULL
+	WHERE latitud IS NULL OR longitud IS NULL;
 
 	--si falla conversion dms a decimal
 	INSERT INTO importacion.ErroresImportacion(id_log, tipo_archivo, registro_origen, dato1, dato2, motivo)
@@ -218,10 +233,7 @@ BEGIN
 	INNER JOIN #staging s ON v.nombre = s.nombre
 	WHERE (v.latitud IS NULL OR v.longitud IS NULL);
 
-	DELETE FROM #validos
-	WHERE latitud IS NULL OR longitud IS NULL;
-
-	--AÑADIR TIPOS DE PARQUES DESDE KML (UPSERT
+	--AÑADIR TIPOS DE PARQUES DESDE KML (UPSERT)
 	UPDATE tp
 	SET estado = 0
 	FROM parques.TipoParque tp

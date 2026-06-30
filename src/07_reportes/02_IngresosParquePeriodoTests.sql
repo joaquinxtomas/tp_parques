@@ -1,6 +1,4 @@
 -- ============================================================
--- UTN - 3641 Bases de Datos Aplicada
--- Sistema de Gestión para Parques Nacionales
 -- FECHA: 29/06/2026
 -- INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
 -- Descripción: Testing del Reporte 2 - Ingresos por parque (mensual, anual, semanal).
