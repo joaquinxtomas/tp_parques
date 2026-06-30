@@ -866,6 +866,7 @@ BEGIN
 END
 GO
 
+
 /*MODIFICACION*/
 CREATE OR ALTER PROCEDURE actividades.ActualizarAtraccion
     @id_atraccion INT,
@@ -875,7 +876,310 @@ CREATE OR ALTER PROCEDURE actividades.ActualizarAtraccion
     @cupo_maximo INT,
     @tipo VARCHAR(20),
 	@turno TIME
-=======
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+
+    DECLARE @id_parque_atraccion INT;
+
+    SELECT @id_parque_atraccion = id_parque --recupero id_parque de la tabla
+    FROM actividades.Atraccion
+    WHERE id_atraccion = @id_atraccion;
+
+    SET @nombre = TRIM(@nombre)
+    SET @tipo = TRIM(@tipo)
+
+	IF @id_parque_atraccion IS NULL --si no la encontro en el select anterior, queda en NULL
+        SET @v_errores += 'La atraccion no existe. ';
+    IF @nombre IS NULL OR @nombre = ''
+        SET @v_errores += 'El nombre es obligatorio ';
+    IF @turno IS NULL                     
+        SET @v_errores += 'El turno (horario) es obligatorio. ';
+
+    IF @nombre <> '' AND @turno IS NOT NULL AND EXISTS (
+        SELECT 1 FROM actividades.Atraccion
+        WHERE nombre = @nombre
+          AND id_parque = @id_parque_atraccion
+          AND turno = @turno
+          AND id_atraccion <> @id_atraccion
+          AND estado = 0
+    )
+        SET @v_errores += 'Ya existe otra atraccion activa con ese nombre, parque y turno. ';
+
+    IF @costo IS NULL 
+        SET @v_errores += 'El costo es obligatorio. ';
+    ELSE IF @costo < 0
+        SET @v_errores += 'El costo debe ser positivo (mayor a 0). ';
+    IF @duracion IS NOT NULL AND @duracion <= 0 
+        SET @v_errores += 'La duracion debe ser positiva (mayor a 0). ';
+    IF @cupo_maximo IS NOT NULL AND @cupo_maximo <= 0
+        SET @v_errores += 'El cupo maximo debe ser positivo (mayor a 0). ';
+    IF @tipo IS NULL OR @tipo = ''
+        SET @v_errores += 'El tipo es obligatorio. ';
+    IF @v_errores <> ''
+    BEGIN 
+        ;THROW 50000, @v_errores, 1;
+    END
+
+    BEGIN TRY 
+        BEGIN TRANSACTION;
+        UPDATE actividades.Atraccion
+        SET
+            nombre = @nombre,
+            costo = @costo,
+            duracion = @duracion,
+            cupo_maximo = @cupo_maximo,
+            tipo = @tipo,
+			turno = @turno
+        WHERE id_atraccion = @id_atraccion;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+/* BAJA */
+CREATE OR ALTER PROCEDURE actividades.EliminarAtraccion
+    @id_atraccion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+    DECLARE @v_estado BIT;
+
+    SELECT @v_estado = estado
+    FROM actividades.Atraccion
+    WHERE id_atraccion = @id_atraccion;
+
+    IF @v_estado IS NULL
+        SET @v_errores += 'La atraccion indicada no existe. ';
+    ELSE IF @v_estado = 1
+        SET @v_errores += 'La atraccion ya está dada de baja. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        ;THROW 50000, @v_errores, 1;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        UPDATE actividades.Atraccion
+        SET estado = 1 --estado de borrado logico
+        WHERE id_atraccion = @id_atraccion
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW
+    END CATCH
+END
+GO
+
+---------------------------------------------------------------------------------------------------------
+/* TOURGUIA */
+
+--              ABM
+
+--               ABM DE TOURGUIA
+
+-- TourGuia
+
+-- ALTA
+CREATE OR ALTER PROCEDURE actividades.InsertarTourGuia
+    @id_atraccion INT,
+    @id_guia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(2000) = '';
+
+    IF @id_atraccion IS NULL
+        SET @v_errores += 'El id de la atraccion es obligatorio. ';
+    ELSE IF NOT EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion)
+        SET @v_errores += 'La atracción indicada no existe ';
+    ELSE IF EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion AND estado = 1)
+        SET @v_errores += 'La atracción está dada de baja. ';
+
+    IF @id_guia IS NULL
+        SET @v_errores += 'El id del guía asignado es obligatorio. ';
+    ELSE IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
+        SET @v_errores += 'El guía indicado no existe. ';
+    ELSE IF EXISTS (
+        SELECT 1 FROM personal.GuiaAutorizado
+        WHERE id_guia = @id_guia
+        AND vigencia_hasta IS NOT NULL
+        AND vigencia_hasta < CAST(GETDATE() AS DATE)
+    )
+        SET @v_errores += 'El guía no se encuentra en vigencia';
+
+    IF EXISTS (SELECT 1 FROM actividades.tourguia WHERE id_atraccion = @id_atraccion AND id_guia = @id_guia AND estado = 0)
+        SET @v_errores += 'El guía ya está asignado a esta atracción';
+
+    IF @v_errores <> ''
+    BEGIN
+        ;THROW 50000, @v_errores, 1;
+    END
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        INSERT INTO actividades.TourGuia (id_atraccion, id_guia)
+        VALUES (@id_atraccion, @id_guia)
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+--BAJA
+CREATE OR ALTER PROCEDURE actividades.EliminarTourGuia
+    @id_tour_guia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @v_errores VARCHAR(MAX) = '';
+
+
+    IF NOT EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia)
+        SET @v_errores += 'El tour no existe. ';
+    ELSE IF EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia AND estado = 1)
+        SET @v_errores += 'El tour ya está dado de baja. ';
+
+    IF @v_errores <> ''
+    BEGIN
+        ;THROW 50000, @v_errores,1;
+    END
+
+    BEGIN TRY 
+        BEGIN TRANSACTION;
+            UPDATE actividades.tourGuia
+            SET estado = 1
+            WHERE id_tour_guia = @id_tour_guia
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+    END
+GO
+
+---------------------------------------------------------------------------------------------------------
+/* TICKETS DE ACTIVIDAD */
+
+CREATE OR ALTER PROCEDURE actividades.RegistrarTicketActividad
+	@id_atraccion INT,
+	@cantidad INT 
+AS
+BEGIN
+	SET NOCOUNT ON;
+	SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+	DECLARE @v_errores VARCHAR (MAX) = '';
+	DECLARE @v_costo DECIMAL (10,2);
+	DECLARE @v_cupo INT;
+	DECLARE @v_estado BIT;
+	DECLARE @v_existe BIT = 0;
+	DECLARE @v_ocupado INT;
+	DECLARE @v_subtotal DECIMAL (12,2);
+	DECLARE @v_fecha DATETIME2(0)= SYSDATETIME();
+
+BEGIN TRANSACTION
+BEGIN TRY
+	-- (a) cantidad positiva
+    IF @cantidad IS NULL OR @cantidad <= 0
+		SET @v_errores += 'La cantidad debe ser mayor a cero. ';
+
+	SELECT @v_costo  = costo,
+           @v_cupo   = cupo_maximo,
+           @v_estado = estado,
+           @v_existe = 1 -- me indica si encontro la atraccion 
+	FROM actividades.Atraccion WHERE id_atraccion = @id_atraccion;
+
+	IF @v_existe = 0
+		SET @v_errores += 'La atraccion no existe. ';
+    ELSE IF @v_estado = 1
+		SET @v_errores += 'La atraccion esta dada de baja. ';
+
+	IF @v_existe = 1 AND @v_estado = 0 AND @cantidad > 0 AND @v_cupo IS NOT NULL 
+	-- si existe el ticket, atraccion activa, cantidad valida y tiene cupo definido, chequeo cuantos cupos ya voy ocupados hoy
+	BEGIN -- CALCULO LA CANTIDAD DE CUPOS ACTUALMENTE PARA EL DIA DE HOY
+		SELECT @v_ocupado = ISNULL(SUM(cantidad), 0)
+		FROM   actividades.TicketsAtraccion
+		WHERE  id_atraccion = @id_atraccion
+		AND  fecha >= CAST(@v_fecha AS DATE) -- casteo la fecha solo como dia -- ej: 21/6/26 00:00 hs
+		AND  fecha <  DATEADD(DAY, 1, CAST(@v_fecha AS DATE))  -- casteo tmb como dia y le sumo 1 dia-- 22/6/26 00:00
+		AND  estado = 0;  
+		IF @v_ocupado + @cantidad > @v_cupo
+                SET @v_errores += 'Cupo insuficiente para la jornada. Disponible: '
+                    + CAST(@v_cupo - @v_ocupado AS VARCHAR(10))
+                    + ', solicitado: ' + CAST(@cantidad AS VARCHAR(10)) + '. ';
+   END
+   IF @v_errores <> '' -- si hubo errores, cierro la transaccion antes de salir
+   BEGIN
+       ROLLBACK TRANSACTION;
+	   RAISERROR(@v_errores, 16, 1);
+       RETURN;
+   END
+       SET @v_subtotal = @cantidad * @v_costo;
+
+	   INSERT INTO actividades.TicketsAtraccion (id_atraccion, fecha, cantidad, subtotal)
+       VALUES (@id_atraccion, @v_fecha, @cantidad, @v_subtotal);
+
+COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH 
+	IF @@TRANCOUNT > 0
+       ROLLBACK TRANSACTION;
+
+    DECLARE @v_msg VARCHAR(MAX) = ERROR_MESSAGE();
+    DECLARE @v_sev INT          = ERROR_SEVERITY();
+    DECLARE @v_est INT          = ERROR_STATE();
+    RAISERROR(@v_msg, @v_sev, @v_est);
+    RETURN;
+END CATCH;
+END
+GO
+
+CREATE OR ALTER PROCEDURE actividades.CancelarTicketActividad
+	@id_ticketAtraccion INT
+AS
+BEGIN
+	SET NOCOUNT ON
+	DECLARE @v_errores VARCHAR(MAX) = '';
+
+	IF NOT EXISTS(SELECT 1 FROM actividades.TicketsAtraccion WHERE  id_ticket_atraccion = @id_ticketAtraccion )
+	SET @v_errores += 'No existe un ticket con ese ID'
+
+	IF EXISTS (SELECT 1 FROM actividades.TicketsAtraccion where  id_ticket_atraccion = @id_ticketAtraccion AND estado = 1)
+	SET @v_errores += 'El registro ya esta dado de baja'
+
+	IF @v_errores <> ''
+	BEGIN 
+		RAISERROR (@v_errores,16,1);
+		RETURN;
+	END
+
+	UPDATE actividades.TicketsAtraccion SET estado = 1 WHERE id_ticket_atraccion = @id_ticketAtraccion;
+END
+GO
+
+---------------------------------------------------------------------------
+-------------------------------- Personal----------------------------------
+---------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 -------------------------------- Personal----------------------------------
 ---------------------------------------------------------------------------
@@ -1008,38 +1312,37 @@ BEGIN
     UPDATE personal.AsignacionGP SET id_guardaparque = @id_guardaparque, id_parque = @id_parque, id_guia = @id_guia, fecha_desde = @fecha_desde, fecha_hasta = @fecha_hasta, motivo = @motivo where id_asignacion = @id_asignacion
 END
 GO
+
 ---------------------------------------------------------------------------
 --------------------------- ABM Guardaparques -----------------------------
 ---------------------------------------------------------------------------
--- Alta
+-- Alta (cifrado)
 CREATE OR ALTER PROCEDURE personal.guardaparque_alta
-    @nombre varchar(100),
-    @dni varchar(10),
+    @nombre         varchar(100),
+    @dni            varchar(10),
     @vigencia_desde date,
     @vigencia_hasta date
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
-    DECLARE @activo bit = 1;
+    DECLARE @v_errores  VARCHAR(MAX)  = '';
+    DECLARE @activo     bit           = 1;
+    DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
 
-    -- Chequeo que el guardaparque no esté cargado
-
-    IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni = @dni and nombre = @nombre)
-        SET @v_errores += 'Ya existe el guardaparque. ';
-            
-    -- Chequeo que los campos obligatorios tengan información para cargar
+    -- Campos obligatorios
 
     IF @nombre IS NULL
         SET @v_errores += 'El nombre del guardaparque es obligatorio. ';
-    
+
     IF @dni IS NULL
         SET @v_errores += 'El DNI del guardaparque es obligatorio. ';
-  
+    ELSE IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
+        SET @v_errores += 'El DNI debe ser numerico y tener entre 7 y 8 digitos. ';
+    ELSE IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni_hash = HASHBYTES('SHA2_256', @dni))
+        SET @v_errores += 'El DNI ya existe. ';
+
     IF @vigencia_desde IS NULL
         SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
-
-    -- En caso de error, salgo y muestro el log
 
     IF @v_errores <> ''
     BEGIN
@@ -1047,10 +1350,15 @@ BEGIN
         RETURN;
     END
 
-    -- Inserto el guardaparque con los datos recibidos y el campo activo por defecto en 1
-
-    INSERT INTO personal.Guardaparque(nombre, dni, vigencia_desde, vigencia_hasta, activo)
-    VALUES (@nombre, @dni, @vigencia_desde, @vigencia_hasta, @activo);
+    INSERT INTO personal.Guardaparque(nombre, dni, dni_hash, vigencia_desde, vigencia_hasta, activo)
+    VALUES (
+        @nombre,
+        EncryptByPassPhrase(@claveCifrado, @dni),
+        HASHBYTES('SHA2_256', @dni),
+        @vigencia_desde,
+        @vigencia_hasta,
+        @activo
+    );
 END
 GO
 -- Baja
@@ -1080,254 +1388,105 @@ BEGIN
     update personal.Guardaparque set activo = @activo where id_guardaparque = @id_guardaparque
 END
 GO
--- Modificacion
+-- Modificacion (cifrado)
 CREATE OR ALTER PROCEDURE personal.guardaparque_modificacion
     @id_guardaparque int,
-    @nombre varchar(100),
-    @dni varchar(10),
-    @vigencia_desde date,
-    @vigencia_hasta date
-
+    @nombre          varchar(100),
+    @dni             varchar(10),
+    @vigencia_desde  date,
+    @vigencia_hasta  date
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores    VARCHAR(MAX)   = '';
+    DECLARE @claveCifrado NVARCHAR(128)  = 'ClaveUltraSegura_123!';
 
-
-    DECLARE @id_parque_atraccion INT;
-
-    SELECT @id_parque_atraccion = id_parque --recupero id_parque de la tabla
-    FROM actividades.Atraccion
-    WHERE id_atraccion = @id_atraccion;
-
-    SET @nombre = TRIM(@nombre)
-    SET @tipo = TRIM(@tipo)
-
-	IF @id_parque_atraccion IS NULL --si no la encontro en el select anterior, queda en NULL
-        SET @v_errores += 'La atraccion no existe. ';
-    IF @nombre IS NULL OR @nombre = ''
-        SET @v_errores += 'El nombre es obligatorio ';
-    IF @turno IS NULL                     
-        SET @v_errores += 'El turno (horario) es obligatorio. ';
-
-    IF @nombre <> '' AND @turno IS NOT NULL AND EXISTS (
-        SELECT 1 FROM actividades.Atraccion
-        WHERE nombre = @nombre
-          AND id_parque = @id_parque_atraccion
-          AND turno = @turno
-          AND id_atraccion <> @id_atraccion
-          AND estado = 0
-    )
-        SET @v_errores += 'Ya existe otra atraccion activa con ese nombre, parque y turno. ';
-
-    IF @costo IS NULL 
-        SET @v_errores += 'El costo es obligatorio. ';
-    ELSE IF @costo < 0
-        SET @v_errores += 'El costo debe ser positivo (mayor a 0). ';
-    IF @duracion IS NOT NULL AND @duracion <= 0 
-        SET @v_errores += 'La duracion debe ser positiva (mayor a 0). ';
-    IF @cupo_maximo IS NOT NULL AND @cupo_maximo <= 0
-        SET @v_errores += 'El cupo maximo debe ser positivo (mayor a 0). ';
-    IF @tipo IS NULL OR @tipo = ''
-        SET @v_errores += 'El tipo es obligatorio. ';
-    IF @v_errores <> ''
-    BEGIN 
-        ;THROW 50000, @v_errores, 1;
-    END
-
-    BEGIN TRY 
-        BEGIN TRANSACTION;
-        UPDATE actividades.Atraccion
-        SET
-            nombre = @nombre,
-            costo = @costo,
-            duracion = @duracion,
-            cupo_maximo = @cupo_maximo,
-            tipo = @tipo,
-			turno = @turno
-        WHERE id_atraccion = @id_atraccion;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
-GO
-
-/* BAJA */
-CREATE OR ALTER PROCEDURE actividades.EliminarAtraccion
-    @id_atraccion INT
-=======
-    -- Chequeo que exista el guardaparque
-    
     IF NOT EXISTS (SELECT 1 FROM personal.Guardaparque WHERE id_guardaparque = @id_guardaparque)
-        SET @v_errores += 'No se encontró el guardaparque. ';
-    
-    -- Chequeo que los campos no nulos se hayan ingresado
+        SET @v_errores += 'No se encontro el guardaparque. ';
 
     IF @nombre IS NULL
         SET @v_errores += 'El nombre del guardaparque es obligatorio. ';
-    
+
     IF @dni IS NULL
         SET @v_errores += 'El DNI del guardaparque es obligatorio. ';
-  
+    ELSE IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
+        SET @v_errores += 'El DNI debe ser numerico y tener entre 7 y 8 digitos. ';
+    ELSE IF EXISTS (
+        SELECT 1 FROM personal.Guardaparque
+        WHERE dni_hash = HASHBYTES('SHA2_256', @dni)
+          AND id_guardaparque <> @id_guardaparque
+    )
+        SET @v_errores += 'El DNI ya existe en otro guardaparque. ';
+
     IF @vigencia_desde IS NULL
         SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
 
-    -- Si hubo errores salgo con el log correspondiente
-    
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
 
-    -- Actualizo el guardaparque con los datos recibidos
-
-    update personal.Guardaparque 
-    set nombre = @nombre, dni = @dni, vigencia_desde = @vigencia_desde, vigencia_hasta = @vigencia_hasta 
-    where id_guardaparque = @id_guardaparque
+    UPDATE personal.Guardaparque
+    SET nombre          = @nombre,
+        dni             = EncryptByPassPhrase(@claveCifrado, @dni),
+        dni_hash        = HASHBYTES('SHA2_256', @dni),
+        vigencia_desde  = @vigencia_desde,
+        vigencia_hasta  = @vigencia_hasta
+    WHERE id_guardaparque = @id_guardaparque;
 END
 GO
+
 ---------------------------------------------------------------------------
 --------------------------------- ABM Guías -------------------------------
 ---------------------------------------------------------------------------
--- Alta
+-- Alta (cifrado)
 CREATE OR ALTER PROCEDURE personal.guiaAutorizado_alta
-    @nombre varchar(100),
-    @dni varchar(10),
-    @especialidad varchar(100),
-    @titulo varchar(100),
+    @nombre         varchar(100),
+    @dni            varchar(10),
+    @especialidad   varchar(100),
+    @titulo         varchar(100),
     @vigencia_desde date,
     @vigencia_hasta date
-
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores    VARCHAR(MAX)   = '';
+    DECLARE @activo       bit            = 1;
+    DECLARE @claveCifrado NVARCHAR(128)  = 'ClaveUltraSegura_123!';
 
-    DECLARE @v_estado BIT;
+    -- Campos obligatorios
 
-    SELECT @v_estado = estado
-    FROM actividades.Atraccion
-    WHERE id_atraccion = @id_atraccion;
-
-    IF @v_estado IS NULL
-        SET @v_errores += 'La atraccion indicada no existe. ';
-    ELSE IF @v_estado = 1
-        SET @v_errores += 'La atraccion ya está dada de baja. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        ;THROW 50000, @v_errores, 1;
-    END
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        UPDATE actividades.Atraccion
-        SET estado = 1 --estado de borrado logico
-        WHERE id_atraccion = @id_atraccion
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-        THROW
-    END CATCH
-END
-GO
-
---              ABM
-
---               ABM DE TOURGUIA
-
--- TourGuia
-
--- ALTA
-CREATE OR ALTER PROCEDURE actividades.InsertarTourGuia
-    @id_atraccion INT,
-    @id_guia INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(2000) = '';
-
-    IF @id_atraccion IS NULL
-        SET @v_errores += 'El id de la atraccion es obligatorio. ';
-    ELSE IF NOT EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion)
-        SET @v_errores += 'La atracción indicada no existe ';
-    ELSE IF EXISTS (SELECT 1 FROM actividades.atraccion WHERE id_atraccion = @id_atraccion AND estado = 1)
-        SET @v_errores += 'La atracción está dada de baja. ';
-
-    IF @id_guia IS NULL
-        SET @v_errores += 'El id del guía asignado es obligatorio. ';
-    ELSE IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
-        SET @v_errores += 'El guía indicado no existe. ';
-    ELSE IF EXISTS (
-        SELECT 1 FROM personal.GuiaAutorizado
-        WHERE id_guia = @id_guia
-        AND vigencia_hasta IS NOT NULL
-        AND vigencia_hasta < CAST(GETDATE() AS DATE)
-    )
-        SET @v_errores += 'El guía no se encuentra en vigencia';
-
-    IF EXISTS (SELECT 1 FROM actividades.tourguia WHERE id_atraccion = @id_atraccion AND id_guia = @id_guia AND estado = 0)
-        SET @v_errores += 'El guía ya está asignado a esta atracción';
-
-    IF @v_errores <> ''
-    BEGIN
-        ;THROW 50000, @v_errores, 1;
-    END
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        INSERT INTO actividades.TourGuia (id_atraccion, id_guia)
-        VALUES (@id_atraccion, @id_guia)
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-END
-GO
-
---BAJA
-CREATE OR ALTER PROCEDURE actividades.EliminarTourGuia
-    @id_tour_guia INT
-=======
-    DECLARE @activo bit = 1;
-    -- Chequeo que no exista el guía que se quiere cargar
-    
-    IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni = @dni and nombre = @nombre)
-        SET @v_errores += 'Ya existe el guía. ';
-
-    -- Chequeo que los campos obligatorios se hayan recibido
     IF @nombre IS NULL
-        SET @v_errores += 'El nombre del guía es obligatorio. ';
-    
+        SET @v_errores += 'El nombre del guia es obligatorio. ';
+
     IF @dni IS NULL
-        SET @v_errores += 'El DNI del guía es obligatorio. ';
-  
+        SET @v_errores += 'El DNI del guia es obligatorio. ';
+    ELSE IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
+        SET @v_errores += 'El DNI debe ser numerico y tener entre 7 y 8 digitos. ';
+    ELSE IF EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni_hash = HASHBYTES('SHA2_256', @dni))
+        SET @v_errores += 'El DNI ya existe. ';
+
     IF @vigencia_desde IS NULL
         SET @v_errores += 'La fecha de comienzo es obligatoria. ';
 
-    -- Salgo con error en caso de existir
-    
     IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
 
-    -- 
-
-    INSERT INTO personal.GuiaAutorizado(nombre, dni, especialidad, titulo, vigencia_desde, vigencia_hasta, activo)
-    VALUES (@nombre, @dni, @especialidad, @titulo, @vigencia_desde, @vigencia_hasta, @activo);
+    INSERT INTO personal.GuiaAutorizado(nombre, dni, dni_hash, especialidad, titulo, vigencia_desde, vigencia_hasta, activo)
+    VALUES (
+        @nombre,
+        EncryptByPassPhrase(@claveCifrado, @dni),
+        HASHBYTES('SHA2_256', @dni),
+        @especialidad,
+        @titulo,
+        @vigencia_desde,
+        @vigencia_hasta,
+        @activo
+    );
 END
 GO
 -- Baja
@@ -1339,30 +1498,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @v_errores VARCHAR(MAX) = '';
 
-
-    IF NOT EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia)
-        SET @v_errores += 'El tour no existe. ';
-    ELSE IF EXISTS (SELECT 1 FROM actividades.tourGuia WHERE id_tour_guia = @id_tour_guia AND estado = 1)
-        SET @v_errores += 'El tour ya está dado de baja. ';
-
-    IF @v_errores <> ''
-    BEGIN
-        ;THROW 50000, @v_errores,1;
-    END
-
-    BEGIN TRY 
-        BEGIN TRANSACTION;
-            UPDATE actividades.tourGuia
-            SET estado = 1
-            WHERE id_tour_guia = @id_tour_guia
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0
-            ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH
-=======
     -- Chequeo que exista el guía
     
      IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
@@ -1381,49 +1516,55 @@ BEGIN
     update personal.GuiaAutorizado set activo = 0 where id_guia = @id_guia
 END
 GO
--- Modificación
+-- Modificación (cifrado)
 CREATE OR ALTER PROCEDURE personal.guia_modificacion
-    @id_guia int,
-    @nombre varchar(100),
-    @dni varchar(10),
-    @especialidad varchar(100),
-    @titulo varchar(100),
+    @id_guia        int,
+    @nombre         varchar(100),
+    @dni            varchar(10),
+    @especialidad   varchar(100),
+    @titulo         varchar(100),
     @vigencia_desde date,
     @vigencia_hasta date
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @v_errores VARCHAR(MAX) = '';
+    DECLARE @v_errores    VARCHAR(MAX)   = '';
+    DECLARE @claveCifrado NVARCHAR(128)  = 'ClaveUltraSegura_123!';
 
-    -- Chequeo que existía el guía que se quiere modificar
-    
-     IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
-        SET @v_errores += 'No se encontró el guía. ';
-            
-    -- Chequeo que se hayan enviado los campos que no se pueden dejar como nulos
+    IF NOT EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE id_guia = @id_guia)
+        SET @v_errores += 'No se encontro el guia. ';
 
     IF @nombre IS NULL
-        SET @v_errores += 'El nombre del guía es obligatorio. ';
-    
+        SET @v_errores += 'El nombre del guia es obligatorio. ';
+
     IF @dni IS NULL
-        SET @v_errores += 'El DNI del guía es obligatorio. ';
-  
+        SET @v_errores += 'El DNI del guia es obligatorio. ';
+    ELSE IF @dni LIKE '%[^0-9]%' OR LEN(@dni) NOT BETWEEN 7 AND 8
+        SET @v_errores += 'El DNI debe ser numerico y tener entre 7 y 8 digitos. ';
+    ELSE IF EXISTS (
+        SELECT 1 FROM personal.GuiaAutorizado
+        WHERE dni_hash = HASHBYTES('SHA2_256', @dni)
+          AND id_guia <> @id_guia
+    )
+        SET @v_errores += 'El DNI ya existe en otro guia. ';
+
     IF @vigencia_desde IS NULL
         SET @v_errores += 'La fecha de vigencia inicial es obligatoria. ';
 
-   -- Salgo con los errores en caso de existir
-   
-   IF @v_errores <> ''
+    IF @v_errores <> ''
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
     END
 
-    -- Actualizo el registro con los datos recibidos
-
-    update personal.GuiaAutorizado 
-    set nombre = @nombre, dni = @dni, especialidad = @especialidad, titulo = @titulo, vigencia_desde = @vigencia_desde, vigencia_hasta = @vigencia_hasta 
-    where id_guia = @id_guia
-
+    UPDATE personal.GuiaAutorizado
+    SET nombre          = @nombre,
+        dni             = EncryptByPassPhrase(@claveCifrado, @dni),
+        dni_hash        = HASHBYTES('SHA2_256', @dni),
+        especialidad    = @especialidad,
+        titulo          = @titulo,
+        vigencia_desde  = @vigencia_desde,
+        vigencia_hasta  = @vigencia_hasta
+    WHERE id_guia = @id_guia;
 END
 GO
