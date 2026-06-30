@@ -20,8 +20,9 @@ CREATE OR ALTER PROCEDURE ventas.Entrada_Nuevo  --	ALTA ENTRADA
     @cantidad_3 INT = NULL,
     @id_tipo_4  INT = NULL,
     @cantidad_4 INT = NULL,
-    @id_tipo_5  INT = NULL,
-    @cantidad_5 INT = NULL
+    @id_tipo_5       INT = NULL,
+    @cantidad_5      INT = NULL,
+    @recargo_feriado BIT = 0        -- 1 = feriado, aplica CEILING(precio * 1.2)
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -142,6 +143,15 @@ BEGIN
     BEGIN
         RAISERROR(@v_errores, 16, 1);
         RETURN;
+    END
+
+    IF @recargo_feriado = 1
+    BEGIN
+        SET @precio_1 = CEILING(@precio_1 * 1.2);
+        IF @precio_2 IS NOT NULL SET @precio_2 = CEILING(@precio_2 * 1.2);
+        IF @precio_3 IS NOT NULL SET @precio_3 = CEILING(@precio_3 * 1.2);
+        IF @precio_4 IS NOT NULL SET @precio_4 = CEILING(@precio_4 * 1.2);
+        IF @precio_5 IS NOT NULL SET @precio_5 = CEILING(@precio_5 * 1.2);
     END
 
     BEGIN TRANSACTION;
@@ -320,7 +330,7 @@ GO
 SELECT e.id_entrada, e.nro_ticket, e.fecha, e.total, e.forma_pago,
        tv.descripcion AS tipo_visitante, tv2.cantidad, tv2.precio_unit, tv2.subtotal
 FROM   ventas.Entrada e
-JOIN   ventas.TicketVisitante tv2 ON tv2.id_ticket = e.id_entrada
+JOIN   ventas.TicketVisitante tv2 ON tv2.id_entrada = e.id_entrada
 JOIN   ventas.TipoVisitante   tv  ON tv.id_tipo_visitante = tv2.id_tipo_visitante
 ORDER BY e.id_entrada, tv.descripcion;
 GO
@@ -341,7 +351,7 @@ GO
 -- CASO 37: baja correcta (primer ticket activo)
 BEGIN TRY
     DECLARE @id_tk INT = (SELECT MIN(id_entrada) FROM ventas.Entrada WHERE estado = 0);
-    EXEC ventas.Ticket_Eliminar @id_entrada = @id_tk;
+    EXEC ventas.Ticket_Eliminar @id_ticket = @id_tk;
     PRINT 'CASO 37 OK: ticket dado de baja';
 END TRY
 BEGIN CATCH

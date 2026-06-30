@@ -47,23 +47,26 @@ def _atraccion_nueva():
     costo = float(input("Costo: ").strip())
     dur   = input("Duración en minutos (vacío=sin límite): ").strip()
     cupo  = input("Cupo máximo (vacío=sin límite): ").strip()
+    turno = input_str("Horario del turno (HH:MM): ")
     success, msg = exec_sp(
-        "EXEC actividades.InsertarAtraccion @id_parque=?, @nombre=?, @costo=?, @duracion=?, @cupo_maximo=?, @tipo=?",
-        (id_p, nombre, costo, int(dur) if dur else None, int(cupo) if cupo else None, tipo)
+        "EXEC actividades.InsertarAtraccion @id_parque=?, @nombre=?, @costo=?, @duracion=?, @cupo_maximo=?, @tipo=?, @turno=?",
+        (id_p, nombre, costo, int(dur) if dur else None, int(cupo) if cupo else None, tipo, turno)
     )
     ok("Atracción creada.") if success else err(msg)
 
 
 def _atraccion_modificar():
     _ver_atracciones()
-    id_a  = input_int("ID atracción a modificar: ")
+    id_a   = input_int("ID atracción a modificar: ")
     nombre = input_str("Nuevo nombre: ")
+    print("  Tipos: paga / gratuita")
+    tipo   = input_str("Tipo: ")
     costo  = float(input("Nuevo costo: ").strip())
     dur    = input("Nueva duración en minutos (vacío=sin límite): ").strip()
     cupo   = input("Nuevo cupo máximo (vacío=sin límite): ").strip()
     success, msg = exec_sp(
-        "EXEC actividades.ActualizarAtraccion @id_atraccion=?, @nombre=?, @costo=?, @duracion=?, @cupo_maximo=?",
-        (id_a, nombre, costo, int(dur) if dur else None, int(cupo) if cupo else None)
+        "EXEC actividades.ActualizarAtraccion @id_atraccion=?, @nombre=?, @costo=?, @duracion=?, @cupo_maximo=?, @tipo=?",
+        (id_a, nombre, costo, int(dur) if dur else None, int(cupo) if cupo else None, tipo)
     )
     ok("Atracción modificada.") if success else err(msg)
 
@@ -81,9 +84,10 @@ def _ticket_nuevo():
     _ver_atracciones()
     id_a   = input_int("ID atracción: ")
     cant   = input_int("Cantidad de visitantes: ")
+    fecha  = input_str("Fecha de la actividad (YYYY-MM-DD): ")
     success, msg = exec_sp(
-        "EXEC actividades.RegistrarTicketActividad @id_atraccion=?, @cantidad=?",
-        (id_a, cant)
+        "EXEC actividades.RegistrarTicketActividad @id_atraccion=?, @cantidad=?, @fecha_actividad=?",
+        (id_a, cant, fecha)
     )
     ok("Ticket registrado.") if success else err(msg)
 
@@ -105,9 +109,8 @@ def _ticket_cancelar():
 
 def _ver_tours():
     cols, rows = fetch("""
-        SELECT tg.id_tour_guia, g.nombre AS guia, a.nombre AS atraccion,
-               tg.fecha_desde, tg.fecha_hasta
-        FROM   actividades.TourGuia  tg
+        SELECT tg.id_tour_guia, g.nombre AS guia, a.nombre AS atraccion, tg.estado
+        FROM   actividades.TourGuia    tg
         JOIN   personal.GuiaAutorizado g ON g.id_guia      = tg.id_guia
         JOIN   actividades.Atraccion   a ON a.id_atraccion = tg.id_atraccion
         ORDER  BY tg.id_tour_guia
@@ -117,14 +120,12 @@ def _ver_tours():
 
 def _tour_nuevo():
     _ver_guias()
-    id_g  = input_int("ID guía: ")
+    id_g = input_int("ID guía: ")
     _ver_atracciones()
-    id_a  = input_int("ID atracción: ")
-    f_ini = input_str("Fecha desde (YYYY-MM-DD): ")
-    f_fin = input_str("Fecha hasta (YYYY-MM-DD, vacío=indefinido): ", allow_empty=True)
+    id_a = input_int("ID atracción: ")
     success, msg = exec_sp(
-        "EXEC actividades.InsertarTourGuia @id_guia=?, @id_atraccion=?, @fecha_desde=?, @fecha_hasta=?",
-        (id_g, id_a, f_ini, f_fin)
+        "EXEC actividades.InsertarTourGuia @id_guia=?, @id_atraccion=?",
+        (id_g, id_a)
     )
     ok("Guía asignado a atracción.") if success else err(msg)
 
@@ -132,7 +133,7 @@ def _tour_nuevo():
 def _tour_eliminar():
     _ver_tours()
     id_tg = input_int("ID asignación a eliminar: ")
-    success, msg = exec_sp("EXEC actividades.usp_EliminarTourGuia @id_tour_guia=?", (id_tg,))
+    success, msg = exec_sp("EXEC actividades.EliminarTourGuia @id_tour_guia=?", (id_tg,))
     ok("Asignación eliminada.") if success else err(msg)
 
 
@@ -144,5 +145,5 @@ def _ver_parques():
 
 
 def _ver_guias():
-    cols, rows = fetch("SELECT id_guia, nombre, especialidad FROM personal.GuiaAutorizado WHERE activo = 1 ORDER BY id_guia")
+    cols, rows = fetch("SELECT id_guia, nombre, especialidad FROM personal.GuiaAutorizado WHERE estado = 0 ORDER BY id_guia")
     print_table(cols, rows)

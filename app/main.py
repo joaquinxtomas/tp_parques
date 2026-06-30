@@ -4,24 +4,31 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 import db
-from modules import ventas, concesiones, actividades, personal
+from modules import ventas, concesiones, actividades, personal, importacion
 
 
 def main():
     print("Conectando a ParquesNacionales...")
-    try:
-        db.get_connection()
-        print("Conexión OK.\n")
-    except Exception as e:
-        print(f"Error al conectar: {e}")
-        print("Revisá config.ini (servidor, usuario y contraseña).")
+    errores = []
+    for role in ('operador', 'consultas', 'importador'):
+        try:
+            db.get_connection(role)
+        except Exception as e:
+            errores.append(f"  [{role}] {e}")
+    if errores:
+        print("Error al conectar:")
+        for e in errores:
+            print(e)
+        print("Revisá config.ini (usuario y contraseña de cada rol).")
         sys.exit(1)
+    print("Conexiones OK.\n")
 
     opciones = {
         "1": ("Ventas",        ventas.menu),
         "2": ("Concesiones",   concesiones.menu),
         "3": ("Actividades",   actividades.menu),
         "4": ("Personal",      personal.menu),
+        "5": ("Importación",   importacion.menu),
         "0": ("Salir",         None),
     }
 

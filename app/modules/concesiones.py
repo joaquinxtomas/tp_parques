@@ -36,8 +36,12 @@ def _ver_empresas():
 
 
 def _empresa_nueva():
-    razon   = input_str("Razón social: ")
-    cuit    = input_str("CUIT: ")
+    razon    = input_str("Razón social: ")
+    print("  CUIT sin guiones (11 dígitos, ej: 30714591230)")
+    cuit     = input_str("CUIT: ")
+    if len(cuit) != 11 or not cuit.isdigit():
+        err("El CUIT debe tener exactamente 11 dígitos numéricos sin guiones.")
+        return
     contacto = input_str("Contacto: ")
     success, msg = exec_sp(
         "EXEC concesiones.Empresa_Nueva @razon_social=?, @cuit=?, @contacto=?",
@@ -48,9 +52,13 @@ def _empresa_nueva():
 
 def _empresa_modificar():
     _ver_empresas()
-    id_e    = input_int("ID empresa a modificar: ")
-    razon   = input_str("Nueva razón social: ")
-    cuit    = input_str("Nuevo CUIT: ")
+    id_e     = input_int("ID empresa a modificar: ")
+    razon    = input_str("Nueva razón social: ")
+    print("  CUIT sin guiones (11 dígitos, ej: 30714591230)")
+    cuit     = input_str("Nuevo CUIT: ")
+    if len(cuit) != 11 or not cuit.isdigit():
+        err("El CUIT debe tener exactamente 11 dígitos numéricos sin guiones.")
+        return
     contacto = input_str("Nuevo contacto: ")
     success, msg = exec_sp(
         "EXEC concesiones.Empresa_Modificar @id_empresa=?, @razon_social=?, @cuit=?, @contacto=?",

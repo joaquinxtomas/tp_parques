@@ -2,29 +2,61 @@ import pyodbc
 import configparser
 import os
 
-_conn = None
+_connections = {}
+_cfg = None
 
 
-def get_connection():
-    global _conn
-    if _conn is None or _conn.closed:
-        cfg = configparser.ConfigParser()
-        cfg.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
-        db = cfg['database']
+def _get_cfg():
+    global _cfg
+    if _cfg is None:
+        _cfg = configparser.ConfigParser()
+        _cfg.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
+    return _cfg
+
+
+def get_connection(role='operador'):
+    global _connections
+    conn = _connections.get(role)
+    if conn is None or conn.closed:
+        cfg = _get_cfg()
+        db  = cfg['database']
+        usr = cfg[role]
         conn_str = (
             f"DRIVER={{{db['driver']}}};"
             f"SERVER={db['server']};"
             f"DATABASE={db['database']};"
-            f"UID={db['uid']};"
-            f"PWD={db['pwd']};"
+            f"UID={usr['uid']};"
+            f"PWD={usr['pwd']};"
             "TrustServerCertificate=yes;"
         )
-        _conn = pyodbc.connect(conn_str, autocommit=False)
-    return _conn
+        # importador: el SP gestiona sus propias transacciones, no usar autocommit=False
+        _connections[role] = pyodbc.connect(conn_str, autocommit=(role == 'importador'))
+    return _connections[role]
 
 
 def exec_sp(sql, params=()):
-    conn = get_connection()
+    """Ejecuta un SP de modificación con el usuario operador."""
+    conn = get_connection('operador')
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql, params)
+        conn.commit()
+        return True, None
+    except pyodbc.Error as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        msg = str(e)
+        if '[SQL Server]' in msg:
+            msg = msg.split('[SQL Server]')[-1].strip()
+            msg = msg.split('(')[0].strip()
+        return False, msg
+
+
+def exec_import(sql, params=()):
+    """Ejecuta un SP de importación con el usuario importador."""
+    conn = get_connection('importador')
     cursor = conn.cursor()
     try:
         cursor.execute(sql, params)
@@ -43,7 +75,8 @@ def exec_sp(sql, params=()):
 
 
 def fetch(sql, params=()):
-    conn = get_connection()
+    """Ejecuta una SELECT con el usuario de consultas (solo lectura)."""
+    conn = get_connection('consultas')
     cursor = conn.cursor()
     cursor.execute(sql, params)
     cols = [col[0] for col in cursor.description]
