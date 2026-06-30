@@ -52,9 +52,6 @@ BEGIN
     DECLARE @id_tipo_discapacitado INT;
     DECLARE @id_tipo_no_residente INT;
 
-    --DECLARE @id_tipo_residente INT;
-    --DECLARE @id_tipo_no_residente INT;
-    
     DECLARE @tamanio_grupo INT = 100;
     DECLARE @tipo_archivo VARCHAR(50) = 'YVERA_VISITAS';
 
@@ -64,17 +61,11 @@ BEGIN
 
     SET @id_log = SCOPE_IDENTITY();
 
-    -- OBTENER IDS TIPO VISITANTE (RESIDENTE Y NO RESIDENTE SON LOS UNICOS QUE VIENEN EN EL ARCHIVO)
     SELECT @id_tipo_adulto = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Adulto';
     SELECT @id_tipo_jubilado = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Jubilado';
     SELECT @id_tipo_estudiante = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Estudiante';
     SELECT @id_tipo_discapacitado = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'Discapacitado';
-
-    --SELECT @id_tipo_residente = id_tipo_visitante
-    --FROM ventas.TipoVisitante WHERE descripcion = 'Residente';
-
-    SELECT @id_tipo_no_residente = id_tipo_visitante
-    FROM ventas.TipoVisitante WHERE descripcion = 'No residente';
+    SELECT @id_tipo_no_residente = id_tipo_visitante FROM ventas.TipoVisitante WHERE descripcion = 'No residente';
 
     IF @id_tipo_adulto IS NULL OR @id_tipo_jubilado IS NULL OR @id_tipo_estudiante IS NULL OR @id_tipo_discapacitado IS NULL
         OR @id_tipo_no_residente IS NULL
@@ -84,7 +75,6 @@ BEGIN
         WHERE id_log = @id_log;
         RETURN;
     END
-
 
     -- TABLA STAGING
 
@@ -235,52 +225,35 @@ BEGIN
     FROM #validos v
     WHERE v.no_residentes > 0;
 
+    ALTER TABLE #cantidades ADD precio DECIMAL(10,2) NULL;
+    UPDATE c
+    SET c.precio = pe.precio
+    FROM #cantidades c
+    LEFT JOIN ventas.PrecioEntrada pe
+        ON pe.id_parque = c.id_parque
+    AND pe.id_tipo_visitante = c.id_tipo_visitante
+    AND pe.fecha_inicio <= c.fecha
+    AND (pe.fecha_fin IS NULL OR pe.fecha_fin >= c.fecha)
+    AND pe.estado = 0;
 
     -- GENERAR GRUPOS
-    CREATE TABLE #nums (n INT PRIMARY KEY);
+
+    -- genera tabla de numeros consecutivos del 1 al 2500 (iguazú, el parque que mas grupos necesita, necesita 2500).
+    CREATE TABLE #nums (n INT PRIMARY KEY); 
     INSERT INTO #nums (n)
     SELECT TOP 2500 ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
     FROM sys.all_objects a CROSS JOIN sys.all_objects b;
 
     CREATE TABLE #grupos (
-        orden             INT IDENTITY(1,1) PRIMARY KEY,
-        id_parque         INT,
-        fecha             DATE,
+        orden INT IDENTITY(1,1) PRIMARY KEY,
+        id_parque INT,
+        fecha DATE,
         id_tipo_visitante INT,
-        cantidad          INT
+        cantidad INT,
+        precio DECIMAL(10,2)
     );
 
-    /*-- grupos de residentes
-    INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad)
-    SELECT
-        v.id_parque,
-        v.fecha,
-        @id_tipo_residente,
-        CASE
-            WHEN n.n * @tamanio_grupo <= v.residentes THEN @tamanio_grupo
-            ELSE v.residentes - ((n.n - 1) * @tamanio_grupo)
-        END
-    FROM #validos v
-    INNER JOIN #nums n
-        ON n.n <= CEILING(CAST(v.residentes AS DECIMAL) / @tamanio_grupo)
-    WHERE v.residentes > 0;
-
-    -- grupos de no residentes
-    INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad)
-    SELECT
-        v.id_parque,
-        v.fecha,
-        @id_tipo_no_residente,
-        CASE
-            WHEN n.n * @tamanio_grupo <= v.no_residentes THEN @tamanio_grupo
-            ELSE v.no_residentes - ((n.n - 1) * @tamanio_grupo)
-        END
-    FROM #validos v
-    INNER JOIN #nums n
-        ON n.n <= CEILING(CAST(v.no_residentes AS DECIMAL) / @tamanio_grupo)
-    WHERE v.no_residentes > 0;*/
-
-    INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad)
+    INSERT INTO #grupos (id_parque, fecha, id_tipo_visitante, cantidad, precio)
     SELECT
         c.id_parque,
         c.fecha,
@@ -288,9 +261,11 @@ BEGIN
         CASE 
             WHEN n.n * @tamanio_grupo <= c.cantidad THEN @tamanio_grupo
             ELSE c.cantidad - ((n.n - 1) * @tamanio_grupo)
-        END
+        END,
+        c.precio
     FROM #cantidades c
     INNER JOIN #nums n
+    -- divide el grupo siempre y cuando n.n sea menor a la cantidad de grupos necesarios.
         ON n.n <= CEILING(CAST(c.cantidad AS DECIMAL) / @tamanio_grupo)
     WHERE c.cantidad > 0;
 
@@ -327,19 +302,16 @@ BEGIN
             e.id_entrada,
             g.id_tipo_visitante,
             g.cantidad,
-            COALESCE(pe.precio, 0),
-            g.cantidad * COALESCE(pe.precio, 0)
+            COALESCE(g.precio, 0),
+            g.cantidad * COALESCE(g.precio, 0)
         FROM #grupos g
         INNER JOIN ventas.Entrada e
             ON e.nro_ticket = -g.orden
            AND e.pto_venta = 0
            AND e.origen = 'IMPORTADO'
-        LEFT JOIN ventas.PrecioEntrada pe
-            ON pe.id_parque = e.id_parque
-        AND pe.id_tipo_visitante = g.id_tipo_visitante
-        AND pe.fecha_inicio <= e.fecha
-        AND (pe.fecha_fin IS NULL OR pe.fecha_fin >= e.fecha)
-        AND pe.estado = 0;
+           
+        SET @tickets_insertados = @@ROWCOUNT;
+
 
         UPDATE ventas.Entrada
         SET total = (
@@ -348,16 +320,16 @@ BEGIN
             WHERE tv.id_entrada = ventas.Entrada.id_entrada
         )
         WHERE origen = 'IMPORTADO'
-          AND pto_venta = 0;
-
-        SET @tickets_insertados = @@ROWCOUNT;
+          AND pto_venta = 0
+          AND nro_ticket < 0;
 
         -- actualizar nro_ticket a valores finales
         UPDATE ventas.Entrada
         SET nro_ticket = id_entrada
         WHERE pto_venta = 0
           AND origen = 'IMPORTADO'
-          AND nro_ticket < 0
+          AND nro_ticket < 0;
+
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH

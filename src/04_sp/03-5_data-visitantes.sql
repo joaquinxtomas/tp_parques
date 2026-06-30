@@ -1,8 +1,6 @@
 -- 29/06/2026
 -- INTEGRANTES: Jimenez Mauricio, Palacios Joaquin, Kamegawa Tomas, Patri Juan Tiago
 -- Descripción: Carga inicial de tipos de visitante y precio de entradas.
-
-
 USE ParquesNacionales;
 GO
 
