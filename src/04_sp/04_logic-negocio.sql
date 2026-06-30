@@ -224,9 +224,6 @@ GO
 --						LOGICAS DE NEGOCIO REGISTRO DE ACTIVIDADES
 --====================================================================================
 
-Use ParquesNacionales
-GO
-
 CREATE OR ALTER PROCEDURE actividades.RegistrarTicketActividad
 	@id_atraccion INT,
 	@cantidad INT,

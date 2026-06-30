@@ -1,6 +1,8 @@
 use ParquesNacionales
 GO
 
+SELECT * FROM parques.Parque
+
 -- ============================================================
 --		EJECUTAR EXCLUSIVAMENTE LUEGO DE IMPORTACION DE PARQUES
 -- ============================================================
@@ -218,6 +220,8 @@ EXEC personal.guiaAutorizado_alta 'Antonella Silva',     '32112255', 'Avistaje d
 EXEC personal.guiaAutorizado_alta 'Ramiro Fernández',    '29667733', 'Escalada en roca',          'Guía de Escalada',                 '2021-08-03', '2025-08-03';
 EXEC personal.guiaAutorizado_alta 'Micaela Torres',      '33990044', 'Interpretación geológica',  'Licenciada en Geología',           '2023-07-19', '2027-07-19';
 GO
+
+SELECT COUNT(*) FROM personal.GuiaAutorizado WHERE estado = 0;
 select * from personal.GuiaAutorizado
 select * from actividades.TourGuia
 --======================================================
@@ -319,5 +323,13 @@ EXEC personal.guardaparque_alta 'Marcelo Villalba',    '22778844', '2013-08-03',
 EXEC personal.guardaparque_alta 'Carolina Espinoza',   '29990055', '2019-07-19', NULL;
 GO
 /*
+SELECT * FROM personal.GuiaAutorizado
 SELECT * FROM personal.Guardaparque
+
+DECLARE @claveCifrado NVARCHAR(128) = 'ClaveUltraSegura_123!';
+   SELECT
+       id_guia,
+       nombre,
+       CONVERT(VARCHAR(10), DecryptByPassPhrase(@claveCifrado, dni)) AS dni
+   FROM personal.GuiaAutorizado;
 */

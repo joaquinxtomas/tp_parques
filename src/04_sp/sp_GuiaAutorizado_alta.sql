@@ -20,7 +20,7 @@ BEGIN
     DECLARE @activo bit = 1;
     -- Chequeo que no exista el guía que se quiere cargar
     
-    IF EXISTS (SELECT 1 FROM personal.Guardaparque WHERE dni = @dni and nombre = @nombre)
+    IF EXISTS (SELECT 1 FROM personal.GuiaAutorizado WHERE dni = @dni and nombre = @nombre)
         SET @v_errores += 'Ya existe el guía. ';
 
     -- Chequeo que los campos obligatorios se hayan recibido

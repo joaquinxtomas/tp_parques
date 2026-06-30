@@ -4,6 +4,10 @@
 USE ParquesNacionales;
 GO
 
+--======================================================================
+-- NO EJECUTAR SIN ANTES CREAR PARQUES EN SEED_DATA
+--======================================================================
+
 -- TIPOS DE VISITANTES
 
 IF NOT EXISTS (SELECT 1 FROM ventas.TipoVisitante WHERE descripcion = 'Adulto')
